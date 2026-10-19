@@ -454,7 +454,9 @@ bool MODBUS_COM::readModbusRegisterToJson(const modbus_register_t *reg, JsonObje
 
     uint16_t readBytes = 1;
 
-    if (reg->type == REGISTER_TYPE_U32 || reg->type == REGISTER_TYPE_U32_ONE_DECIMAL)
+    if (reg->type == REGISTER_TYPE_U32 || reg->type == REGISTER_TYPE_U32_ONE_DECIMAL ||
+        reg->type == REGISTER_TYPE_U32_HIGH_FIRST || reg->type == REGISTER_TYPE_U32_HIGH_FIRST_TWO_DECIMAL ||
+        reg->type == REGISTER_TYPE_U32_HIGH_FIRST_TEN)
     {
         readBytes = 2;
     }
@@ -512,6 +514,30 @@ bool MODBUS_COM::readModbusRegisterToJson(const modbus_register_t *reg, JsonObje
                 return false;
             }
             (*variant)[reg->name] = ((static_cast<uint32_t>(raw_value) << 16) | secondWord) + reg->offset;
+            break;
+        }
+        case REGISTER_TYPE_U32_HIGH_FIRST_TWO_DECIMAL:
+        {
+            uint16_t secondWord = 0;
+            if (!getCachedHoldingValue(reg->id + 1, &secondWord))
+            {
+                writeLog("Missing second word for %s", reg->name);
+                return false;
+            }
+            const uint32_t value = (static_cast<uint32_t>(raw_value) << 16) | secondWord;
+            (*variant)[reg->name] = (value / 100.0) + reg->offset;
+            break;
+        }
+        case REGISTER_TYPE_U32_HIGH_FIRST_TEN:
+        {
+            uint16_t secondWord = 0;
+            if (!getCachedHoldingValue(reg->id + 1, &secondWord))
+            {
+                writeLog("Missing second word for %s", reg->name);
+                return false;
+            }
+            const uint32_t value = (static_cast<uint32_t>(raw_value) << 16) | secondWord;
+            (*variant)[reg->name] = (static_cast<uint64_t>(value) * 10) + reg->offset;
             break;
         }
         case REGISTER_TYPE_U32_ONE_DECIMAL:

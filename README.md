@@ -1,5 +1,9 @@
 # Solar2MQTT [![GitHub release](https://img.shields.io/github/release/softwarecrash/Solar2MQTT?include_prereleases=&sort=semver&color=blue)](https://github.com/softwarecrash/Solar2MQTT/releases/latest) [![Discord](https://img.shields.io/discord/1007020337482973254?logo=discord&label=Discord)](https://discord.gg/fb2nZWDExz)
 
+## EASUN SMS-6.5KP fork
+
+Read-only telemetry for the single-MPPT EASUN iSolar-SMS-6.5KP-Wifi is tracked in [Protocol/EASUN_SMS_CVTE_READ_ONLY.md](Protocol/EASUN_SMS_CVTE_READ_ONLY.md). Build status: [![EASUN ESP32 build](https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/actions/workflows/easun-build.yml/badge.svg?branch=codex/easun-sms-support)](https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/actions/workflows/easun-build.yml). A successful build is compile status, not physical inverter validation.
+
 # Looking for the ESP8266 Variant? go [HERE](https://github.com/softwarecrash/Solar2MQTT-ESP8266)
 
 # Features:
