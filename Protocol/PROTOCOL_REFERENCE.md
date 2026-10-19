@@ -73,6 +73,7 @@ Additional references / candidates:
 | `MODBUS_MUST` | RS485 Modbus | detected | structured | MUST PV/PH18 |
 | `MODBUS_ANENJI` | RS485 Modbus | detected | structured | Anenji |
 | `MODBUS_DEYE` | RS485 Modbus | detected | partially structured | currently only core registers |
+| `MODBUS_EASUN_SMS` | USB-A RS232 / Modbus RTU | detected by SMS serial prefix or manual selection | read-only structured telemetry | EASUN SMS / CVTE; see [read-only register map](EASUN_SMS_CVTE_READ_ONLY.md) |
 
 Not present as a dedicated code type:
 
@@ -96,7 +97,9 @@ Serial PI devices:
 Modbus:
 
 - separate detection in the Modbus layer
-- then mapped to `MODBUS_MUST`, `MODBUS_ANENJI`, or `MODBUS_DEYE`
+- then mapped to a protocol-specific Modbus parser; unsupported devices stay unknown
+- EASUN SMS is checked before generic candidates using the scanned `803096` serial prefix
+- Deye additionally validates its serial, rated-power register, and operation-mode range
 
 ### 4.2 Refinement Inside The PI30 Family
 
@@ -189,6 +192,7 @@ Minimum dump set for new unknown serial devices:
 | `MODBUS_MUST` | holding registers from the MUST table | model / charger detection |
 | `MODBUS_ANENJI` | holding registers from the Anenji table | serial number registers |
 | `MODBUS_DEYE` | core holding registers | currently partial coverage |
+| `MODBUS_EASUN_SMS` | CVTE USB-A holding-register map | read-only grid/output/battery telemetry; PV/SOC/temperature left unset pending confirmation |
 
 ## 8. Data Field Superset
 

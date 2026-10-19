@@ -1,5 +1,8 @@
 #include "deye.h"
 
+#include <ctype.h>
+#include <string.h>
+
 
 const modbus_register_t *Deye::getLiveRegisters() const
 {
@@ -18,6 +21,11 @@ const char *Deye::getName() const
 
 bool Deye::retrieveModel(MODBUS_COM &mCom, char *modelBuffer, size_t bufferSize)
 {
+    if (modelBuffer == nullptr || bufferSize == 0)
+    {
+        return false;
+    }
+
     modelBuffer[0] = '\0'; // Clear the buffer
     JsonDocument doc;
     JsonObject jsonObj = doc.to<JsonObject>(); // Create and get JsonObject
@@ -37,7 +45,50 @@ bool Deye::retrieveModel(MODBUS_COM &mCom, char *modelBuffer, size_t bufferSize)
             const char *sn3 = doc["SN3"];
             const char *sn4 = doc["SN4"];
             const char *sn5 = doc["SN5"];
-            snprintf(modelBuffer, bufferSize, "%s%s%s%s%s", sn1, sn2, sn3, sn4, sn5);
+            char serial[16] = {};
+            snprintf(serial, sizeof(serial), "%s%s%s%s%s", sn1, sn2, sn3, sn4, sn5);
+
+            // The five serial-number reads alone are not a Deye signature:
+            // unrelated Modbus devices can return valid values at 0x0003-0x0007.
+            // Confirm them with Deye's rated-power and operation-mode registers.
+            uint16_t ratingWords[2] = {};
+            uint16_t operationMode = 0xFFFF;
+            if (!mCom.readHoldingBlock(16, 2, ratingWords, 2) ||
+                !mCom.readHoldingBlock(59, 1, &operationMode, 1))
+            {
+                return false;
+            }
+
+            size_t serialLength = strlen(serial);
+            while (serialLength > 0 && (serial[serialLength - 1] == '\0' || serial[serialLength - 1] == ' '))
+            {
+                serial[--serialLength] = '\0';
+            }
+            if (serialLength < 8 || serialLength > 10)
+            {
+                return false;
+            }
+            for (size_t i = 0; i < serialLength; ++i)
+            {
+                if (!isalnum(static_cast<unsigned char>(serial[i])))
+                {
+                    return false;
+                }
+            }
+
+            const uint32_t ratedPowerRaw = static_cast<uint32_t>(ratingWords[0]) |
+                                           (static_cast<uint32_t>(ratingWords[1]) << 16);
+            const float ratedPowerWatts = ratedPowerRaw / 10.0f;
+            if (ratedPowerWatts < 500.0f || ratedPowerWatts > 50000.0f || operationMode > 4)
+            {
+                writeLog("Deye probe rejected serial=%s ratedPowerRaw=%lu mode=%u",
+                         serial,
+                         static_cast<unsigned long>(ratedPowerRaw),
+                         static_cast<unsigned int>(operationMode));
+                return false;
+            }
+
+            snprintf(modelBuffer, bufferSize, "%s", serial);
             return true;
         }
         delay(50);

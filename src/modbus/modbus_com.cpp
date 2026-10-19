@@ -3,11 +3,70 @@
 
 #include "solar/InverterHardware.h"
 
+extern void writeLog(const char *format, ...);
+
+#if defined(MODBUS_EASUN_SMS_DEBUG)
+namespace
+{
+uint16_t debugModbusCrc16(const uint8_t *data, size_t length)
+{
+    uint16_t crc = 0xFFFF;
+    for (size_t i = 0; i < length; ++i)
+    {
+        crc ^= data[i];
+        for (uint8_t bit = 0; bit < 8; ++bit)
+        {
+            crc = (crc & 1) ? static_cast<uint16_t>((crc >> 1) ^ 0xA001) : static_cast<uint16_t>(crc >> 1);
+        }
+    }
+    return crc;
+}
+
+void debugLogHoldingTx(ModbusMaster &master, uint16_t startRegister, uint16_t registerCount)
+{
+    uint8_t frame[6] = {
+        master.getSlaveId(), 0x03,
+        static_cast<uint8_t>(startRegister >> 8), static_cast<uint8_t>(startRegister),
+        static_cast<uint8_t>(registerCount >> 8), static_cast<uint8_t>(registerCount),
+    };
+    const uint16_t crc = debugModbusCrc16(frame, sizeof(frame));
+    writeLog("[SMS][TX] slave=%u fc=03 start=0x%04X count=%u crc=%02X%02X",
+             static_cast<unsigned int>(frame[0]), static_cast<unsigned int>(startRegister),
+             static_cast<unsigned int>(registerCount), static_cast<unsigned int>(crc & 0xFF),
+             static_cast<unsigned int>(crc >> 8));
+}
+
+void debugLogHoldingRx(ModbusMaster &master, uint16_t startRegister, uint16_t registerCount)
+{
+    uint8_t frame[3 + MODBUS_COM::MAX_HOLDING_BLOCK_WORDS * 2] = {};
+    frame[0] = master.getSlaveId();
+    frame[1] = 0x03;
+    frame[2] = static_cast<uint8_t>(registerCount * 2);
+    for (uint16_t i = 0; i < registerCount; ++i)
+    {
+        const uint16_t value = master.getResponseBuffer(i);
+        frame[3 + i * 2] = static_cast<uint8_t>(value >> 8);
+        frame[4 + i * 2] = static_cast<uint8_t>(value);
+    }
+    const uint16_t crc = debugModbusCrc16(frame, 3 + registerCount * 2);
+    writeLog("[SMS][RX] slave=%u fc=03 start=0x%04X count=%u crc=%02X%02X",
+             static_cast<unsigned int>(frame[0]), static_cast<unsigned int>(startRegister),
+             static_cast<unsigned int>(registerCount), static_cast<unsigned int>(crc & 0xFF),
+             static_cast<unsigned int>(crc >> 8));
+    for (uint16_t i = 0; i < registerCount; ++i)
+    {
+        writeLog("[SMS][RAW] reg=0x%04X raw=0x%04X (%u)",
+                 static_cast<unsigned int>(startRegister + i),
+                 static_cast<unsigned int>(master.getResponseBuffer(i)),
+                 static_cast<unsigned int>(master.getResponseBuffer(i)));
+    }
+}
+} // namespace
+#endif
+
 //----------------------------------------------------------------------
 //  Public Functions
 //----------------------------------------------------------------------
-
-extern void writeLog(const char *format, ...);
 
 int _dir_pin;
 
@@ -194,6 +253,9 @@ bool MODBUS_COM::readHoldingBlockOnce(uint16_t startRegister, uint16_t registerC
     }
     const uint16_t savedTimeout = getResponseTimeout();
     setResponseTimeout(timeoutMs);
+#if defined(MODBUS_EASUN_SMS_DEBUG)
+    debugLogHoldingTx(_mb, startRegister, registerCount);
+#endif
     const uint8_t result = _mb.readHoldingRegisters(startRegister, registerCount);
     setResponseTimeout(savedTimeout);
     if (resultOut != nullptr) *resultOut = result;
@@ -201,6 +263,9 @@ bool MODBUS_COM::readHoldingBlockOnce(uint16_t startRegister, uint16_t registerC
     {
         return false;
     }
+#if defined(MODBUS_EASUN_SMS_DEBUG)
+    debugLogHoldingRx(_mb, startRegister, registerCount);
+#endif
     for (uint16_t i = 0; i < registerCount; ++i)
     {
         buffer[i] = _mb.getResponseBuffer(i);
@@ -227,10 +292,16 @@ bool MODBUS_COM::loadHoldingBlock(uint16_t startRegister, uint16_t registerCount
 
     for (uint8_t i = 0; i < MODBUS_RETRIES; i++)
     {
+#if defined(MODBUS_EASUN_SMS_DEBUG)
+        debugLogHoldingTx(_mb, startRegister, registerCount);
+#endif
         uint8_t result = _mb.readHoldingRegisters(startRegister, registerCount);
         bool is_received = logModbusResult(result, startRegister, registerCount);
         if (is_received)
         {
+#if defined(MODBUS_EASUN_SMS_DEBUG)
+            debugLogHoldingRx(_mb, startRegister, registerCount);
+#endif
             storeReadCache(startRegister, registerCount);
             return true;
         }
@@ -302,10 +373,16 @@ bool MODBUS_COM::getModbusValue(uint16_t register_id,
 
     for (uint8_t i = 0; i < MODBUS_RETRIES; i++)
     {
+#if defined(MODBUS_EASUN_SMS_DEBUG)
+        debugLogHoldingTx(_mb, register_id, readBytes);
+#endif
         uint8_t result = _mb.readHoldingRegisters(register_id, readBytes);
         bool is_received = logModbusResult(result, register_id, readBytes);
         if (is_received)
         {
+#if defined(MODBUS_EASUN_SMS_DEBUG)
+            debugLogHoldingRx(_mb, register_id, readBytes);
+#endif
             storeReadCache(register_id, readBytes);
             *value_ptr = _mb.getResponseBuffer(0);
             return true;
@@ -393,6 +470,12 @@ bool MODBUS_COM::readModbusRegisterToJson(const modbus_register_t *reg, JsonObje
         {
         case REGISTER_TYPE_U16:
             (*variant)[reg->name] = raw_value + reg->offset;
+            break;
+        case REGISTER_TYPE_U16_ONE_DECIMAL:
+            (*variant)[reg->name] = (raw_value / 10.0f) + reg->offset;
+            break;
+        case REGISTER_TYPE_U16_TWO_DECIMAL:
+            (*variant)[reg->name] = (raw_value / 100.0f) + reg->offset;
             break;
         case REGISTER_TYPE_U16_SWAP:
             (*variant)[reg->name] = swapRegisterBytes(raw_value) + reg->offset;
@@ -538,6 +621,27 @@ bool MODBUS_COM::readModbusRegisterToJson(const modbus_register_t *reg, JsonObje
             writeLog("Unsupported register type");
             break;
         }
+#if defined(MODBUS_EASUN_SMS_DEBUG)
+    if (reg->type != REGISTER_TYPE_DEBUG && reg->type != REGISTER_TYPE_CALLBACK &&
+        reg->type != REGISTER_TYPE_VIRTUAL_CALLBACK && reg->name != nullptr)
+    {
+        String decoded;
+        serializeJson((*variant)[reg->name], decoded);
+        const char *scale = "1";
+        switch (reg->type)
+        {
+        case REGISTER_TYPE_U16_ONE_DECIMAL: scale = "0.1"; break;
+        case REGISTER_TYPE_U16_TWO_DECIMAL: scale = "0.01"; break;
+        case REGISTER_TYPE_INT16_ONE_DECIMAL: scale = "signed*0.1"; break;
+        case REGISTER_TYPE_INT16_TWO_DECIMAL: scale = "signed*0.01"; break;
+        default: break;
+        }
+        writeLog("[SMS][DECODE] reg=0x%04X name=%s raw=0x%04X u16=%u i16=%d scale=%s value=%s",
+                 static_cast<unsigned int>(reg->id), reg->name,
+                 static_cast<unsigned int>(raw_value), static_cast<unsigned int>(raw_value),
+                 static_cast<int>(static_cast<int16_t>(raw_value)), scale, decoded.c_str());
+    }
+#endif
     }
     else
     {
