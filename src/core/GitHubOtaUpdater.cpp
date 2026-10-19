@@ -174,7 +174,9 @@ void GitHubOtaUpdater::doCheck()
         return;
     }
 
-    const String url = "https://api.github.com/repos/" + _owner + "/" + _repo + "/releases/latest";
+    // List releases instead of using /releases/latest so OTA can also see
+    // prereleases used for hardware testing.
+    const String url = "https://api.github.com/repos/" + _owner + "/" + _repo + "/releases?per_page=20";
 
     WiFiClientSecure client;
     client.setInsecure();
@@ -212,9 +214,9 @@ void GitHubOtaUpdater::doCheck()
     }
 
     JsonDocument filter;
-    filter["tag_name"] = true;
-    filter["name"] = true;
-    JsonObject assetFilter = filter["assets"].to<JsonArray>().add<JsonObject>();
+    JsonObject releaseFilter = filter.to<JsonArray>().add<JsonObject>();
+    releaseFilter["tag_name"] = true;
+    JsonObject assetFilter = releaseFilter["assets"].to<JsonArray>().add<JsonObject>();
     assetFilter["name"] = true;
     assetFilter["browser_download_url"] = true;
 
@@ -224,7 +226,7 @@ void GitHubOtaUpdater::doCheck()
     {
         String details = "Release JSON parse error: ";
         details += error.c_str();
-        if (!payload.startsWith("{"))
+        if (!payload.startsWith("["))
         {
             details += " / starts with: ";
             details += payload.substring(0, 48);
@@ -233,55 +235,46 @@ void GitHubOtaUpdater::doCheck()
         return;
     }
 
-    const String tag = doc["tag_name"] | doc["name"] | "";
-    const String latestVersion = normalizeVersion(tag);
-    if (!latestVersion.length())
-    {
-        setState(State::Error, "Missing release version");
-        return;
-    }
-
-    lock();
-    _latestVersion = latestVersion;
-    unlock();
-
-    if (compareVersions(latestVersion, _currentVersion) <= 0)
-    {
-        setState(State::UpToDate, "");
-        return;
-    }
-
-    const JsonArray assets = doc["assets"].as<JsonArray>();
     const String matchToken = "_" + _buildVariant + "_V";
-    for (JsonVariantConst asset : assets)
+    for (JsonObjectConst release : doc.as<JsonArray>())
     {
-        const String name = asset["name"] | "";
-        if (!name.length())
-        {
-            continue;
-        }
-        if (!name.endsWith(".bin.ota"))
-        {
-            continue;
-        }
-        if (name.indexOf(matchToken) < 0)
+        const String latestVersion = normalizeVersion(release["tag_name"] | "");
+        if (!latestVersion.length())
         {
             continue;
         }
 
-        const String assetUrl = asset["browser_download_url"] | "";
-        if (!assetUrl.length())
+        for (JsonObjectConst asset : release["assets"].as<JsonArray>())
         {
-            continue;
+            const String name = asset["name"] | "";
+            if (!name.endsWith(".bin.ota") || name.indexOf(matchToken) < 0)
+            {
+                continue;
+            }
+
+            const String assetUrl = asset["browser_download_url"] | "";
+            if (!assetUrl.length())
+            {
+                continue;
+            }
+
+            lock();
+            _latestVersion = latestVersion;
+            unlock();
+            if (compareVersions(latestVersion, _currentVersion) <= 0)
+            {
+                setState(State::UpToDate, "");
+                return;
+            }
+
+            lock();
+            _assetName = name;
+            _assetUrl = assetUrl;
+            unlock();
+
+            setState(State::UpdateAvailable, "");
+            return;
         }
-
-        lock();
-        _assetName = name;
-        _assetUrl = assetUrl;
-        unlock();
-
-        setState(State::UpdateAvailable, "");
-        return;
     }
 
     setState(State::Error, "No matching asset for build");

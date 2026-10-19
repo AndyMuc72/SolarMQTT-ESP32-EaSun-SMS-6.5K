@@ -48,7 +48,9 @@ The following read-only telemetry was added from the public EASUN/CVTE map and S
 | `0x0270–0x0274` | PV1 voltage/current/power and states | ×0.1 V, ×0.01 A, W, raw states |
 | `0x0275–0x027C` | PV1 day/month/year/lifetime generation | high-word-first U32 ×10 Wh |
 | `0x0320–0x0321` | `Fan_Speed`, `Fan_Lock_Status` | speed %; non-zero status means blocked per table |
-| `0x0330–0x0335` | tracker, inverter, charger, charger 2, ambient, discharge temperatures | signed °C |
+| `0x0330–0x0335` | tracker, inverter, charger, charger 2, ambient, discharge temperatures | signed ×0.1 °C, provisional for this WiFi-labelled unit |
+
+The public CVTE register sheet lists these temperatures as signed integer °C (scale 1), and its ESPHome package decodes them without a decimal scale. That package reports SMS-6.2KP-W as validated and SMS-6.5KP-W-E as under validation. On the attached WiFi-labelled SMS-6.5KP, the observed raw values are all multiples of ten (for example 310, 340, 480 and 250); dividing by ten gives plausible temperatures (31.0, 34.0, 48.0 and 25.0 °C). Solar2MQTT therefore applies ×0.1 provisionally for this target. Confirm against raw register values and an independent temperature reading before treating the scale as final.
 
 This label specifies one MPPT. The parser therefore reads the total-PV and PV1 range (`0x0260–0x027C`) and deliberately does not poll PV2 (`0x0280–0x028C`). The values in the total and PV1 groups may be duplicates on single-tracker firmware. `0x01B1` is the inverter's measured grid input current; a separate external CT/meter current was not found in the CVTE read-only map, so the grid current must not be described as an external CT reading.
 

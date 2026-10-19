@@ -1,5 +1,12 @@
 # EASUN SMS fork release notes
 
+## 0.1.0-easun.2
+
+- Add a downloadable OTA image (`*.bin.ota`) and merged serial-flash image to the tagged GitHub release.
+- Point the firmware update check at the `AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K` fork so devices check this project's releases.
+- Decode the six temperature registers as signed tenths of a degree provisionally; the scale still needs confirmation against this exact inverter.
+- Build/test status: GitHub Actions firmware compilation must pass for the release asset to be published. Hardware telemetry is not yet fully validated.
+
 ## 0.1.0-easun.1
 
 - Add read-only CVTE telemetry for battery SOC and charge current, grid and output current, PV total and PV1 measurements and energy counters, operating/charging states, raw alarms/fault codes, fan and six temperatures.

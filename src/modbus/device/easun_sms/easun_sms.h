@@ -99,12 +99,16 @@ private:
         {0x027B, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U32_HIGH_FIRST_TEN, "PV1_Generation_Total_Wh", 0, {}, nullptr, kPv1BlockStart, kPv1BlockCount},
         {0x0320, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, DESCR_Fan_Speed, 0, {}, nullptr, kFanBlockStart, kFanBlockCount},
         {0x0321, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, DESCR_Fan_Lock_Status, 0, {}, nullptr, kFanBlockStart, kFanBlockCount},
-        {0x0330, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, DESCR_Tracker_Temperature, 0, {}, nullptr, kThermalBlockStart, kThermalBlockCount},
-        {0x0331, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, DESCR_Inverter_Temperature, 0, {}, nullptr, kThermalBlockStart, kThermalBlockCount},
-        {0x0332, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, DESCR_MPPT1_Charger_Temperature, 0, {}, nullptr, kThermalBlockStart, kThermalBlockCount},
-        {0x0333, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, DESCR_MPPT2_Charger_Temperature, 0, {}, nullptr, kThermalBlockStart, kThermalBlockCount},
-        {0x0334, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, "Ambient_Temperature", 0, {}, nullptr, kThermalBlockStart, kThermalBlockCount},
-        {0x0335, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, "Discharge_Temperature", 0, {}, nullptr, kThermalBlockStart, kThermalBlockCount},
+        // Provisional target-specific scale: the connected WiFi-labelled unit
+        // returns 310/340/480/480/250, which are plausible as tenths of a
+        // degree. The public CVTE table says integer Celsius; keep this marked
+        // as provisional until raw values can be checked against hardware.
+        {0x0330, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, DESCR_Tracker_Temperature, 0, {}, nullptr, kThermalBlockStart, kThermalBlockCount},
+        {0x0331, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, DESCR_Inverter_Temperature, 0, {}, nullptr, kThermalBlockStart, kThermalBlockCount},
+        {0x0332, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, DESCR_MPPT1_Charger_Temperature, 0, {}, nullptr, kThermalBlockStart, kThermalBlockCount},
+        {0x0333, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, DESCR_MPPT2_Charger_Temperature, 0, {}, nullptr, kThermalBlockStart, kThermalBlockCount},
+        {0x0334, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, "Ambient_Temperature", 0, {}, nullptr, kThermalBlockStart, kThermalBlockCount},
+        {0x0335, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, "Discharge_Temperature", 0, {}, nullptr, kThermalBlockStart, kThermalBlockCount},
     };
 
     inline static const modbus_register_t registers_static[] = {
