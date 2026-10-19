@@ -244,7 +244,7 @@ void GitHubOtaUpdater::doCheck()
             continue;
         }
 
-        for (JsonObjectConst asset : release["assets"].as<JsonArray>())
+        for (JsonObjectConst asset : release["assets"].as<JsonArrayConst>())
         {
             const String name = asset["name"] | "";
             if (!name.endsWith(".bin.ota") || name.indexOf(matchToken) < 0)
