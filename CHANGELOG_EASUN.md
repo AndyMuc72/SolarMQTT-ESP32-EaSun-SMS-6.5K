@@ -1,5 +1,11 @@
 # EASUN SMS fork release notes
 
+## 0.1.0-easun.3
+
+- Add experimental temperature candidates at `0x00A4–0x00A6` reported in syssi/esphome-smg-ii PR #163. Publish raw unsigned values under explicit experimental names; component assignments and scaling are not confirmed.
+- Keep `0x0330–0x0335` at the provisional ×0.1 scale because that matches observed values from the WiFi-labelled unit, while documenting that the supplied generic CVTE table specifies whole °C.
+- Build/test status: GitHub Actions compilation is the release gate; exact WiFi-model temperature readings still require comparison with the app or an independent probe.
+
 ## 0.1.0-easun.2
 
 - Add a downloadable OTA image (`*.bin.ota`) and merged serial-flash image to the tagged GitHub release.
