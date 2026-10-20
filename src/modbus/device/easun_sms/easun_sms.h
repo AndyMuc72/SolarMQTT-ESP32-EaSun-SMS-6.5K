@@ -42,6 +42,8 @@ private:
     static constexpr uint16_t kPv1BlockCount = 13;
     static constexpr uint16_t kFanBlockStart = 0x0320;
     static constexpr uint16_t kFanBlockCount = 2;
+    static constexpr uint16_t kExperimentalTemperatureBlockStart = 0x00A4;
+    static constexpr uint16_t kExperimentalTemperatureBlockCount = 3;
     static constexpr uint16_t kThermalBlockStart = 0x0330;
     static constexpr uint16_t kThermalBlockCount = 6;
 
