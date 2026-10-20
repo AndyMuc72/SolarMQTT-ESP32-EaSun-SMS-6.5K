@@ -58,6 +58,11 @@ private:
         {0x005D, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, DESCR_Output_Load_Percent, 0, {}, nullptr, kAcLiveBlockStart, kAcLiveBlockCount},
         {0x0085, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, DESCR_AC_Out_Watt},
         // CVTE telemetry map (table based; validate against the WiFi-labelled unit).
+        // PR #163 reports these three registers as experimental temperature
+        // candidates. Keep their raw values and avoid assigning components.
+        {0x00A4, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "Temperature_A_Experimental", 0, {}, nullptr, kExperimentalTemperatureBlockStart, kExperimentalTemperatureBlockCount},
+        {0x00A5, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "Temperature_B_Experimental", 0, {}, nullptr, kExperimentalTemperatureBlockStart, kExperimentalTemperatureBlockCount},
+        {0x00A6, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "Temperature_C_Experimental", 0, {}, nullptr, kExperimentalTemperatureBlockStart, kExperimentalTemperatureBlockCount},
         {0x0046, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "Fault_Code_1", 0, {}, nullptr, kFaultBlockStart, kFaultBlockCount},
         {0x0047, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "Fault_Code_2", 0, {}, nullptr, kFaultBlockStart, kFaultBlockCount},
         {0x0048, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "Alarm_Code_1", 0, {}, nullptr, kFaultBlockStart, kFaultBlockCount},
