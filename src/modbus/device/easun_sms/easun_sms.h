@@ -42,6 +42,8 @@ private:
     static constexpr uint16_t kPv1BlockCount = 13;
     static constexpr uint16_t kFanBlockStart = 0x0320;
     static constexpr uint16_t kFanBlockCount = 2;
+    static constexpr uint16_t kExperimentalTemperatureBlockStart = 0x00A4;
+    static constexpr uint16_t kExperimentalTemperatureBlockCount = 3;
     static constexpr uint16_t kThermalBlockStart = 0x0330;
     static constexpr uint16_t kThermalBlockCount = 6;
 
@@ -53,9 +55,18 @@ private:
         {0x0053, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, DESCR_AC_In_Watt, 0, {}, nullptr, kAcLiveBlockStart, kAcLiveBlockCount},
         {0x0058, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16_ONE_DECIMAL, DESCR_AC_Out_Voltage, 0, {}, nullptr, kAcLiveBlockStart, kAcLiveBlockCount},
         {0x005A, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16_TWO_DECIMAL, DESCR_AC_Out_Frequency, 0, {}, nullptr, kAcLiveBlockStart, kAcLiveBlockCount},
-        {0x005D, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, DESCR_Output_Load_Percent, 0, {}, nullptr, kAcLiveBlockStart, kAcLiveBlockCount},
-        {0x0085, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, DESCR_AC_Out_Watt},
+        // The target's 0x005D value is 21 while its active output power is
+        // 128 W; keep it for comparison instead of treating it as load %.
+        {0x005D, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, "Output_Load_Percent_005D_Reference", 0, {}, nullptr, kAcLiveBlockStart, kAcLiveBlockCount},
+        // 0x0085 is the corrected W-E register, but reads 0 on the target
+        // while the CVTE output block reports a coherent 128 W.
+        {0x0085, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, "AC_Out_Watt_0085_Reference"},
         // CVTE telemetry map (table based; validate against the WiFi-labelled unit).
+        // PR #163 reports these three registers as experimental temperature
+        // candidates. Keep their raw values and avoid assigning components.
+        {0x00A4, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "Temperature_A_Experimental", 0, {}, nullptr, kExperimentalTemperatureBlockStart, kExperimentalTemperatureBlockCount},
+        {0x00A5, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "Temperature_B_Experimental", 0, {}, nullptr, kExperimentalTemperatureBlockStart, kExperimentalTemperatureBlockCount},
+        {0x00A6, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "Temperature_C_Experimental", 0, {}, nullptr, kExperimentalTemperatureBlockStart, kExperimentalTemperatureBlockCount},
         {0x0046, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "Fault_Code_1", 0, {}, nullptr, kFaultBlockStart, kFaultBlockCount},
         {0x0047, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "Fault_Code_2", 0, {}, nullptr, kFaultBlockStart, kFaultBlockCount},
         {0x0048, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "Alarm_Code_1", 0, {}, nullptr, kFaultBlockStart, kFaultBlockCount},
@@ -63,19 +74,35 @@ private:
         {0x0144, MODBUS_TYPE_HOLDING, REGISTER_TYPE_CUSTOM_VAL_NAME, "Operating_State", 0, {.bitfield = {
             "Power On", "Initialization", "Standby", "AC Mode", "Solar Mode", "Battery Mode",
             "Generator Mode", "Fault", "Power Off", "Factory", "Upgrade"}}, nullptr},
+        // Keep the inverter's SOC estimate separate from a BMS SOC. A Pylontech
+        // reference was about 19% while this register reported 51%.
         {0x0152, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, DESCR_Battery_Percent},
-        {0x0154, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, "Battery_Bus_Voltage", 0, {}, nullptr, kBatteryBlockStart, kBatteryBlockCount},
+        {0x0152, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, "Inverter_Battery_Percent", 0, {}, nullptr, kBatteryBlockStart, kBatteryBlockCount},
+        {0x0154, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, "DC_Bus_Voltage", 0, {}, nullptr, kBatteryBlockStart, kBatteryBlockCount},
         {0x0155, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16_ONE_DECIMAL, DESCR_Battery_Voltage, 0, {}, nullptr, kBatteryBlockStart, kBatteryBlockCount},
+        // 0x0156 matches the external Pylontech current. Publish a clear
+        // canonical name, retain the legacy alias, and provide the signed net
+        // current used by the energy integrator.
+        {0x0156, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, "Battery_Current", 0, {}, nullptr, kBatteryBlockStart, kBatteryBlockCount},
         {0x0156, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, DESCR_Battery_Average_Current, 0, {}, nullptr, kBatteryBlockStart, kBatteryBlockCount},
-        {0x0157, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, DESCR_Battery_Charge_Current, 0, {}, nullptr, kBatteryBlockStart, kBatteryBlockCount},
+        {0x0156, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, DESCR_Battery_Load, 0, {}, nullptr, kBatteryBlockStart, kBatteryBlockCount},
+        // Despite its table name, 0x0157 was observed negative while the
+        // battery discharged. Keep it diagnostic until its meaning is tested.
+        {0x0157, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, "Battery_Current_0157_Experimental", 0, {}, nullptr, kBatteryBlockStart, kBatteryBlockCount},
         {0x0176, MODBUS_TYPE_HOLDING, REGISTER_TYPE_CUSTOM_VAL_NAME, DESCR_Inverter_Charge_State, 0, {.bitfield = {
             "Not Charging", "CC/CV", "Float", "Equalization"}}, nullptr},
         {0x01B1, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_TWO_DECIMAL, DESCR_AC_In_Current_L1},
         {0x0210, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "Output_Priority"},
         {0x0211, MODBUS_TYPE_HOLDING, REGISTER_TYPE_CUSTOM_VAL_NAME, "Run_Mode", 0, {.bitfield = {"APP", "UPS", "GEN"}}, nullptr},
         {0x021A, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_TWO_DECIMAL, DESCR_AC_Out_Current_L1, 0, {}, nullptr, kOutputBlockStart, kOutputBlockCount},
+        // On this WiFi/FW8 unit, 0x021C agrees with current and apparent power;
+        // unlike 0x0085, it reports the observed 128 W low-load output.
+        {0x021C, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, DESCR_AC_Out_Watt, 0, {}, nullptr, kOutputBlockStart, kOutputBlockCount},
         {0x021C, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, "AC_Output_Active_Power", 0, {}, nullptr, kOutputBlockStart, kOutputBlockCount},
         {0x021D, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, DESCR_AC_Out_VA, 0, {}, nullptr, kOutputBlockStart, kOutputBlockCount},
+        // 2.1% is consistent with 128 W on a 6.5 kW inverter. The 21 value
+        // from 0x005D is retained above only as a reference.
+        {0x0220, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, DESCR_Output_Load_Percent, 0, {}, nullptr, kOutputBlockStart, kOutputBlockCount},
         {0x0220, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, DESCR_AC_Out_Percent_L1, 0, {}, nullptr, kOutputBlockStart, kOutputBlockCount},
         // One physical tracker: total PV and PV1 are read; PV2 (0x0280-0x028C)
         // is intentionally omitted from the polling list for this model.

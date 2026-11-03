@@ -1,5 +1,19 @@
 # EASUN SMS fork release notes
 
+## 0.1.0-easun.4
+
+- Use the target-validated `0x021C` value as `AC_Out_Watt`; keep `0x0085` visible only as a reference because it read 0 W while the WiFi/FW8 target reported 128 W at low load.
+- Use `0x0220` (2.1%) as the target's output load percentage; retain `0x005D` (21) as a diagnostic reference because it is inconsistent with the measured 128 W on a 6.5 kW inverter.
+- Publish `0x0156` as canonical signed `Battery_Current` and signed net `Battery_Load`, retaining `Battery_Average_Current` for compatibility. Treat `0x0157` as experimental until its semantics are verified.
+- Rename the 0x0154 field to `DC_Bus_Voltage`; expose the inverter-reported SOC estimate separately and document that it does not match the Pylontech BMS SOC.
+- Build/test status: pending this release's GitHub Actions Wemos D1 mini ESP32 build. This verifies compilation only; hardware readings still need fresh live comparison.
+
+## 0.1.0-easun.3
+
+- Add the experimental temperature candidates at `0x00A4–0x00A6` reported in syssi/esphome-smg-ii PR #163. Publish the raw unsigned values under explicit experimental names; component assignments and scaling are not confirmed.
+- Keep the generic `0x0330–0x0335` temperature fields at the provisional ×0.1 scale because that matches the observed WiFi-labelled unit values, while documenting that the supplied CVTE table specifies whole °C.
+- Build/test status: GitHub Actions compilation is the release gate; exact WiFi-model temperature readings still require comparison with the app or an independent probe.
+
 ## 0.1.0-easun.2
 
 - Add a downloadable OTA image (`*.bin.ota`) and merged serial-flash image to the tagged GitHub release.
