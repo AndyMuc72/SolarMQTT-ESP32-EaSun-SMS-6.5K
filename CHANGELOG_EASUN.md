@@ -1,5 +1,11 @@
 # EASUN SMS fork release notes
 
+## 0.1.0-easun.6
+
+- Show the inverter's AC output apparent power (VA) as W in the EASUN dashboard, because it tracks the reported output current more consistently on this target. This changes the UI only; raw telemetry remains unchanged.
+- Display Solar voltage and power as zero below 10, filtering the observed low-level readings from the dashboard only.
+- Solar register scaling is unchanged; the reported PV power still needs confirmation against an independent measurement.
+
 ## 0.1.0-easun.5
 
 - Add read-only BMS communication and live telemetry registers `0x0190–0x0199`, including BMS SOC, voltage, current, temperature, SOH, and capacity raw counts.
