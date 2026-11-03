@@ -472,16 +472,13 @@ function totalSolarPower(data) {
   const pv1Power = pickDataNumber(data, ["PV1_Input_Power"], ["LiveData"]);
   const pv2Power = getSolarChannelInfo(data, 2).power;
 
-  if (pv1Power !== null && pv2Power !== null) {
-    return pv1Power + pv2Power;
-  }
+  const fallbackPower =
+    pv1Power !== null && pv2Power !== null
+      ? pv1Power + pv2Power
+      : pv1Power ?? pv2Power;
 
-  if (pv1Power !== null) {
-    return pv1Power;
-  }
-
-  if (pv2Power !== null) {
-    return pv2Power;
+  if (fallbackPower !== null) {
+    return Math.abs(fallbackPower) < 10 ? 0 : fallbackPower;
   }
 
   return getSolarChannelInfo(data, 1).power;
