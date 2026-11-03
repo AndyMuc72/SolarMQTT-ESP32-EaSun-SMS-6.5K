@@ -1,5 +1,11 @@
 # EASUN SMS fork release notes
 
+## 0.1.0-easun.5
+
+- Add read-only BMS communication and live telemetry registers `0x0190–0x0199`, including BMS SOC, voltage, current, temperature, SOH, and capacity raw counts.
+- Expose BMS SOC separately from inverter-estimated SOC to identify whether firmware 8 receives values from the battery BMS.
+- Build/test status: GitHub Actions firmware compilation is the build gate. The BMS values still require validation on the WiFi-labelled inverter.
+
 ## 0.1.0-easun.4
 
 - Use the target-validated `0x021C` value as `AC_Out_Watt`; keep `0x0085` visible only as a reference because it read 0 W while the WiFi/FW8 target reported 128 W at low load.

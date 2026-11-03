@@ -34,6 +34,8 @@ private:
     static constexpr uint16_t kAcLiveBlockCount = 14;
     static constexpr uint16_t kBatteryBlockStart = 0x0154;
     static constexpr uint16_t kBatteryBlockCount = 4;
+    static constexpr uint16_t kBmsBlockStart = 0x0190;
+    static constexpr uint16_t kBmsBlockCount = 10;
     static constexpr uint16_t kOutputBlockStart = 0x0218;
     static constexpr uint16_t kOutputBlockCount = 9;
     static constexpr uint16_t kPvTotalBlockStart = 0x0260;
@@ -89,6 +91,21 @@ private:
         // Despite its table name, 0x0157 was observed negative while the
         // battery discharged. Keep it diagnostic until its meaning is tested.
         {0x0157, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, "Battery_Current_0157_Experimental", 0, {}, nullptr, kBatteryBlockStart, kBatteryBlockCount},
+        // CVTE BMS telemetry block. The independent ESPHome map assigns
+        // 0x0196 to the BMS-reported SOC; compare it with 0x0152 on this target.
+        {0x0190, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "BMS_Protocol", 0, {}, nullptr, kBmsBlockStart, kBmsBlockCount},
+        {0x0191, MODBUS_TYPE_HOLDING, REGISTER_TYPE_CUSTOM_VAL_NAME, "BMS_Communication_Status", 0, {.bitfield = {
+            "ID Search", "ID Remote Lock", "ID Locked"}}, nullptr, kBmsBlockStart, kBmsBlockCount},
+        {0x0192, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "BMS_Pack_ID", 0, {}, nullptr, kBmsBlockStart, kBmsBlockCount},
+        {0x0193, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, "BMS_Voltage", 0, {}, nullptr, kBmsBlockStart, kBmsBlockCount},
+        {0x0194, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, "BMS_Current", 0, {}, nullptr, kBmsBlockStart, kBmsBlockCount},
+        {0x0195, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, "BMS_Temperature", 0, {}, nullptr, kBmsBlockStart, kBmsBlockCount},
+        {0x0196, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, "BMS_SOC", 0, {}, nullptr, kBmsBlockStart, kBmsBlockCount},
+        {0x0197, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, "BMS_SOH", 0, {}, nullptr, kBmsBlockStart, kBmsBlockCount},
+        // Capacity registers are exposed raw: the source map reports each raw
+        // count as 10 mAh. Their ratio is useful as an independent SOC check.
+        {0x0198, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "BMS_Current_Capacity_Raw", 0, {}, nullptr, kBmsBlockStart, kBmsBlockCount},
+        {0x0199, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "BMS_Full_Charge_Capacity_Raw", 0, {}, nullptr, kBmsBlockStart, kBmsBlockCount},
         {0x0176, MODBUS_TYPE_HOLDING, REGISTER_TYPE_CUSTOM_VAL_NAME, DESCR_Inverter_Charge_State, 0, {.bitfield = {
             "Not Charging", "CC/CV", "Float", "Equalization"}}, nullptr},
         {0x01B1, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_TWO_DECIMAL, DESCR_AC_In_Current_L1},

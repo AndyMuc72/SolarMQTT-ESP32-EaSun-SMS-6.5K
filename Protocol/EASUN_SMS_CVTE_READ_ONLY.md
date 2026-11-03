@@ -36,6 +36,10 @@ The following read-only telemetry was added from the public EASUN/CVTE map and S
 | `0x0152` | `Battery_Percent`, `Inverter_Battery_Percent` | signed integer %; inverter estimate only |
 | `0x0154` | `DC_Bus_Voltage` | signed ×0.1 V |
 | `0x0157` | `Battery_Current_0157_Experimental` | signed ×0.1 A; name/meaning not confirmed |
+| `0x0190–0x0192` | BMS protocol, communication state, pack ID | raw words; status labels 0 ID Search, 1 ID Remote Lock, 2 ID Locked |
+| `0x0193–0x0194` | `BMS_Voltage`, `BMS_Current` | signed ×0.1 V / A |
+| `0x0195–0x0197` | `BMS_Temperature`, `BMS_SOC`, `BMS_SOH` | signed integer °C / % / % |
+| `0x0198–0x0199` | current and full-charge capacity raw values | unsigned raw counts; reference map says 10 mAh per count |
 | `0x0176` | `Inverter_Charge_State` | 0 not charging, 1 CC/CV, 2 float, 3 equalization |
 | `0x01B1` | `AC_In_Current_L1` | signed ×0.01 A (grid/mains current) |
 | `0x0210–0x0211` | `Output_Priority`, `Run_Mode` | raw priority; 0 APP, 1 UPS, 2 GEN |
@@ -54,6 +58,8 @@ The following read-only telemetry was added from the public EASUN/CVTE map and S
 
 The public CVTE register sheet lists these temperatures as signed integer °C (scale 1), and its ESPHome package decodes them without a decimal scale. That package reports SMS-6.2KP-W as validated and SMS-6.5KP-W-E as under validation. On the attached WiFi-labelled SMS-6.5KP, the observed raw values are all multiples of ten (for example 310, 340, 480 and 250); dividing by ten gives plausible temperatures (31.0, 34.0, 48.0 and 25.0 °C). Solar2MQTT therefore applies ×0.1 provisionally for this target. Confirm against raw register values and an independent temperature reading before treating the scale as final.
 
+The BMS block at `0x0190–0x0199` is added as a read-only diagnostic. Compare `BMS_SOC` (`0x0196`) with the inverter's `Battery_Percent` (`0x0152`) and the battery's own app. A status of `0` is labelled ID Search, `1` ID Remote Lock, and `2` ID Locked by the ESPHome reference definitions; validate what this status means on the WiFi/FW8 target. `BMS_Voltage` and `BMS_Current` should be compared with `Battery_Voltage` and `Battery_Current`. The raw current/full capacity counts at `0x0198/0x0199` can provide a ratio check; the reference map assigns a 10 mAh/count scale. This register block has not yet been confirmed on this exact unit, and the fields may be unavailable if the inverter has no active BMS link.
+
 PR #163 also labels `0x00A4–0x00A6` as experimental temperature candidates. It describes the three values as the same at low load and says their exact component assignment is unknown. Solar2MQTT exposes these as raw unsigned words named `Temperature_A/B/C_Experimental`; it does not apply a scale or present them as confirmed sensor locations. Compare these values with the app before relying on them.
 
 This label specifies one MPPT. The parser therefore reads the total-PV and PV1 range (`0x0260–0x027C`) and deliberately does not poll PV2 (`0x0280–0x028C`). The values in the total and PV1 groups may be duplicates on single-tracker firmware. `0x01B1` is the inverter's measured grid input current; a separate external CT/meter current was not found in the CVTE read-only map, so the grid current must not be described as an external CT reading.
@@ -62,11 +68,11 @@ The source map and sensor definitions are in [JamesMacieira/ESPHome-Easun-SMS-In
 
 ### Test status
 
-**Firmware build:** recorded by the GitHub Actions workflow for the Wemos D1 mini ESP32 target. A green check confirms compilation only. The WiFi-labelled inverter has not yet been physically checked register-by-register against its LCD; do that before treating table-derived fields as confirmed. The firmware continues to use Modbus read function 0x03 only.
+**Firmware build:** recorded by the GitHub Actions workflow for the Wemos D1 mini ESP32 target. A green check confirms compilation only. The WiFi-labelled inverter has not yet been physically checked register-by-register against its LCD or BMS values; do that before treating table-derived fields as confirmed. The firmware continues to use Modbus read function 0x03 only.
 
 The `0x0159` nominal battery voltage and `0x015D` configuration value are deliberately not published as live telemetry. PV registers `0x0090/0x0091` are not used because scans report that they do not exist on the W-E firmware. Battery SOC, warnings, operating state, and CVTE thermal registers are table-derived and need comparison with the attached `iSolar-SMS-6.5KP-Wifi` unit. In particular, `0x005B` is not used for output power because it can read zero at low loads.
 
-The strongest available register evidence is [syssi/esphome-smg-ii PR #163](https://github.com/syssi/esphome-smg-ii/pull/163), which reports scans of three physical SMS-6.5KP-W-E units. The attached WiFi-labelled model may have a different firmware revision, so compare readings with the inverter display before relying on them operationally.
+The strongest available register evidence is [syssi/esphome-smg-ii PR #163](https://github.com/syssi/esphome-smg-ii/pull/163), which reports scans of three physical SMS-6.5KP-W-E units. The BMS register definitions also appear in [JamesMacieira's ESPHome CVTE implementation](https://github.com/JamesMacieira/ESPHome-Easun-SMS-Inverter/blob/main/modules/wf_bms.yaml); that project marks the 6.5KP-W-E as under validation. The attached WiFi-labelled model may have a different firmware revision, so compare readings with the inverter display and battery app before relying on them operationally.
 
 ## Target-specific checks (WiFi-labelled unit, firmware 8)
 

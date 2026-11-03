@@ -1,6 +1,6 @@
 # Solar2MQTT ESP32 EaSun SMS 6.5K [![GitHub release](https://img.shields.io/github/v/release/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K?include_prereleases&sort=semver&color=blue)](https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/releases/latest) [![EASUN build](https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/actions/workflows/easun-build.yml/badge.svg)](https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/actions/workflows/easun-build.yml)
 
-This ESP32 fork targets the EASUN iSolar-SMS-6.5KP-WiFi / SMS-6.5KP family. See [the read-only CVTE register map and target validation notes](Protocol/EASUN_SMS_CVTE_READ_ONLY.md) before relying on individual readings. The WiFi-labelled firmware 8 unit has target-specific corrections for output watts, load percentage, battery current, DC bus voltage, and inverter-reported SOC.
+This ESP32 fork targets the EASUN iSolar-SMS-6.5KP-WiFi / SMS-6.5KP family. See [the read-only CVTE register map and target validation notes](Protocol/EASUN_SMS_CVTE_READ_ONLY.md) before relying on individual readings. The WiFi-labelled firmware 8 unit has target-specific corrections for output watts, load percentage, battery current, DC bus voltage, and inverter-reported SOC, plus read-only BMS telemetry candidates for SOC comparison.
 
 ## EASUN SMS-6.5KP fork
 
