@@ -1,5 +1,11 @@
 # EASUN SMS fork release notes
 
+## 0.1.0-easun.8-dev (upstream integration; not a published release)
+
+- Merge current upstream main while retaining version-7 EASUN registers, scaling, dashboard behavior, fork OTA repository and empty personal Wi-Fi defaults.
+- Adopt upstream OTA writer ownership, restart handling and PI protocol/model fixes. Keep fork prerelease selection and blocked `.5`/`.6`; allow development builds to upgrade to public releases.
+- Preserve the version-7 tag and release files. See [upstream synchronization notes](UPSTREAM_SYNC.md) for actual host/build/ESP32 results and the live GitHub HTTP 503/504 limitation.
+
 ## 0.1.0-easun.7
 
 - Rebase repairs on working `.4`; fix `.6` dashboard syntax and GitHub HTTPS JSON truncation/task-handle race.
