@@ -1,5 +1,11 @@
 # EASUN SMS fork release notes
 
+## 0.1.0-easun.8
+
+- Restore fork OTA discovery using a compact, automatically published release index; retry transient index errors and retain API fallback.
+- Keep actual failed checks visible instead of reporting false up-to-date status. Retain board matching, blocked `.5`/`.6` and one-click installation.
+- Include current upstream synchronization; preserve version-7 EASUN register mappings, partition layout and empty personal Wi-Fi defaults. See [OTA validation](OTA_VALIDATION.md).
+
 ## 0.1.0-easun.8-dev (upstream integration; not a published release)
 
 - Merge current upstream main while retaining version-7 EASUN registers, scaling, dashboard behavior, fork OTA repository and empty personal Wi-Fi defaults.

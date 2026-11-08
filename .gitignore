@@ -11,3 +11,4 @@ src/www.h
 build.log
 webserver/
 webserver/reportdevice/private/lib/config.local.php
+__pycache__/
