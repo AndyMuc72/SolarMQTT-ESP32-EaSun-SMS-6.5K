@@ -14,7 +14,9 @@ Public firmware for **Wemos D1 mini ESP32 / EASUN SMS-6.5KP WiFi**. Based on the
 
 ## Test status and limits
 
-The repair candidate passed 6 OTA reader self-tests on a physical ESP32, 3 real GitHub update checks, repeated HTTP requests and a 120-second serial boot observation without panic, watchdog or brownout. Dashboard tests cover more than 5,000 assertions including raw-data preservation. CI compilation and image checks are required for release. This is not a long-duration or connected-inverter validation. Physical inverter, Pylontech BMS and MQTT measurement validation remain open.
+The repair candidate passed 6 OTA reader self-tests on a physical ESP32, 3 real GitHub update checks, repeated HTTP requests and a 120-second serial boot observation without panic, watchdog or brownout. Dashboard tests cover 5,018 assertions including raw-data preservation, plus 6 PV compatibility scenarios. The final public `.7` firmware also passed a local build, ESP image checksum/SHA validation, empty-NVS and private-credential scans. It was installed by OTA on the test ESP32, reconnected to its existing Wi-Fi, served JavaScript identical to the public source and passed three more real GitHub update checks and 12 HTTP health checks. No personal Wi-Fi defaults were included in that firmware.
+
+**GitHub Actions status:** source/default/dashboard checks passed; the compiler build was blocked by repeated HTTP 504 responses while downloading official ESP32 tooling, before compilation. [Failed CI attempts and original logs](https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/actions/runs/42469403771). This prerelease uses locally built artifacts, not successful CI build artifacts. The automatic release workflow still requires successful compilation and image checks. This is not a long-duration or connected-inverter validation. Physical inverter, Pylontech BMS and MQTT measurement validation remain open.
 
 ## Installation
 
