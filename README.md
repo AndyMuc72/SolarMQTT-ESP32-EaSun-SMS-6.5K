@@ -4,6 +4,8 @@ This ESP32 fork targets the EASUN iSolar-SMS-6.5KP-WiFi / SMS-6.5KP family. See 
 
 ## Public release 0.1.0-easun.7
 
+The current integration source tracks the latest upstream main as `0.1.0-easun.8-dev`; [merge decisions and validation status](UPSTREAM_SYNC.md) are recorded separately. The published version-7 tag and assets remain unchanged.
+
 Normal releases contain **no personal Wi-Fi defaults or saved configuration**. This is also the policy for future releases. Private recovery files must never be published. See [release notes, test status and USB/OTA instructions](RELEASE_NOTES.md). Versions `.5` and `.6` are known problematic user-reported releases; `.7` is based on `.4` with the tested UI and update-check repairs.
 
 ## EASUN SMS-6.5KP fork
