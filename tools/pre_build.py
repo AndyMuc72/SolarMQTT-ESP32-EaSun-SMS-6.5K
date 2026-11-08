@@ -1,6 +1,9 @@
 import gzip
 import glob
 import os
+import shutil
+import subprocess
+import sys
 
 WWW_DIR = os.path.join("src", "webUI")
 OUTPUT_HEADER_FILE = os.path.join("src", "www.h")
@@ -23,7 +26,7 @@ def guess_mime_type(filename):
 
 def emit_asset(path):
     with open(path, "rb") as handle:
-        compressed = gzip.compress(handle.read(), compresslevel=9)
+        compressed = gzip.compress(handle.read(), compresslevel=9, mtime=0)
 
     array_name = os.path.relpath(path, WWW_DIR).replace(os.sep, "_").replace(".", "_")
     lines = [f"const uint8_t {array_name}_gz[] PROGMEM = {{\n"]
@@ -40,6 +43,13 @@ def emit_asset(path):
 
 
 def main():
+    subprocess.run([sys.executable, "tools/check_public_build.py"], check=True)
+    node = shutil.which("node")
+    if node is None:
+        raise RuntimeError("Node.js is required to validate firmware JavaScript before packaging")
+    for script in glob.glob(os.path.join(WWW_DIR, "*.js")):
+        subprocess.run([node, "--check", script], check=True)
+
     if not os.path.isdir(WWW_DIR):
         print(f"Skip asset build, missing: {WWW_DIR}")
         return

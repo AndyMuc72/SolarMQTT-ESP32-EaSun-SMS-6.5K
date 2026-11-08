@@ -7,7 +7,6 @@ const state = {
   reportContext: null,
 };
 
-const REPORT_DEVICE_FORM_URL = "https://solar2mqtt-reportdevice.softwarecrash.de/";
 
 function byId(id) {
   return document.getElementById(id);
@@ -42,19 +41,6 @@ function firstPresentValue(values) {
     }
   }
   return "";
-}
-
-function appendQueryValue(params, key, value) {
-  if (!isDataValuePresent(value)) {
-    return;
-  }
-
-  const text = String(value).trim();
-  if (!text) {
-    return;
-  }
-
-  params.set(key, text);
 }
 
 function getDeviceDetectedModel(data = {}) {
@@ -164,7 +150,7 @@ const OVERVIEW_GROUPS = [
   {
     title: "Solar",
     fields: [
-      { label: "V", keys: ["PV_Input_Voltage", "PV1_Input_Voltage"], unit: "V", decimals: 1 },
+      { label: "V", keys: ["PV_Input_Voltage", "PV1_Input_Voltage"], unit: "V", decimals: 1, solarVoltage: true },
       { label: "A", keys: ["PV1_Input_Current"], unit: "A", decimals: 1 },
       { label: "W", solarChannel: 1, unit: "W", decimals: 0 },
     ],
@@ -172,7 +158,7 @@ const OVERVIEW_GROUPS = [
   {
     title: "Solar 2",
     fields: [
-      { label: "V", keys: ["PV2_Input_Voltage"], unit: "V", decimals: 1 },
+      { label: "V", keys: ["PV2_Input_Voltage"], unit: "V", decimals: 1, solarVoltage: true },
       { label: "A", keys: ["PV2_Input_Current"], unit: "A", decimals: 1 },
       { label: "W", solarChannel: 2, unit: "W", decimals: 0 },
     ],
@@ -208,8 +194,7 @@ const OVERVIEW_GROUPS = [
     fields: [
       { label: "V", keys: ["AC_Out_Voltage_L1", "AC_Out_Voltage", "AC_Output_Voltage"], unit: "V", decimals: 1 },
       { label: "Hz", keys: ["AC_Out_Frequency_L1", "AC_Out_Frequency", "AC_Output_Frequency"], unit: "Hz", decimals: 1 },
-      { label: "W", keys: ["AC_Out_Watt_L1", "AC_Out_Watt", "AC_Output_Power", "Output_Power"], unit: "W", decimals: 0 },
-      { label: "VA", keys: ["AC_Out_VA_L1", "AC_Out_VA"], unit: "VA", decimals: 0 },
+      { label: "W", displayLoadPower: true, unit: "W", decimals: 0 },
       { label: "%", keys: ["AC_Out_Percent_L1", "AC_Out_Percent", "Output_Load_Percent"], unit: "%", decimals: 0 },
       { label: "A", keys: ["AC_Out_Current_L1", "AC_Output_Current", "Output_Current"], unit: "A", decimals: 1 },
     ],
@@ -406,11 +391,25 @@ function getSolarChannelInfo(data, channel = 1) {
   }
 
   return {
-    voltage,
+    voltage: voltage !== null && Math.abs(voltage) < 10 ? 0 : voltage,
     current,
-    power,
+    power: power !== null && Math.abs(power) < 10 ? 0 : power,
     hasData: voltage !== null || current !== null || power !== null,
   };
+}
+
+function displayLoadPower(data) {
+  const protocol = [
+    data?.Status?.protocol,
+    data?.protocol,
+    data?.EspData?.detect_protocol_name,
+    data?.DeviceData?.Protocol_ID,
+  ].find((value) => typeof value === "string" && value.length > 0) || "";
+  const isEasunSms = protocol === "MODBUS_EASUN_SMS";
+  const keys = isEasunSms
+    ? ["AC_Out_VA_L1", "AC_Out_VA", "AC_Out_Watt_L1", "AC_Out_Watt", "AC_Output_Power", "Output_Power"]
+    : ["AC_Out_Watt_L1", "AC_Out_Watt", "AC_Output_Power", "Output_Power"];
+  return pickDataValue(data, keys, ["LiveData"]);
 }
 
 function solarMetaText(data) {
@@ -453,22 +452,19 @@ function normalizeOverviewLabel(field) {
 function totalSolarPower(data) {
   const totalPower = pickDataNumber(data, ["PV_Total_Input_Power", "PV_Input_Power", "PV_Charging_Power", "SCC_Charge_Power"], ["LiveData"]);
   if (totalPower !== null) {
-    return totalPower;
+    return Math.abs(totalPower) < 10 ? 0 : totalPower;
   }
 
   const pv1Power = pickDataNumber(data, ["PV1_Input_Power"], ["LiveData"]);
   const pv2Power = getSolarChannelInfo(data, 2).power;
 
-  if (pv1Power !== null && pv2Power !== null) {
-    return pv1Power + pv2Power;
-  }
+  const fallbackPower =
+    pv1Power !== null && pv2Power !== null
+      ? pv1Power + pv2Power
+      : pv1Power ?? pv2Power;
 
-  if (pv1Power !== null) {
-    return pv1Power;
-  }
-
-  if (pv2Power !== null) {
-    return pv2Power;
+  if (fallbackPower !== null) {
+    return Math.abs(fallbackPower) < 10 ? 0 : fallbackPower;
   }
 
   return getSolarChannelInfo(data, 1).power;
@@ -518,7 +514,7 @@ function renderMeters(data) {
       pickDataNumber(data, ["AC_Out_Watt", "AC_Output_Power", "Output_Power"], ["LiveData"]),
       pickDataNumber(data, ["AC_Out_Rating_Active_Power"], ["DeviceData"])
     );
-  const loadPower = pickDataValue(data, ["AC_Out_Watt", "AC_Output_Power", "Output_Power"], ["LiveData"]);
+  const loadPower = displayLoadPower(data);
   const loadVoltage = pickDataValue(data, ["AC_Out_Voltage", "AC_Output_Voltage"], ["LiveData"]);
   const solar1 = getSolarChannelInfo(data, 1);
   const solar2 = getSolarChannelInfo(data, 2);
@@ -698,8 +694,16 @@ function renderOverview(data) {
         let value = null;
         if (field.solarChannel) {
           value = getSolarChannelInfo(data, field.solarChannel).power;
+        } else if (field.displayLoadPower) {
+          value = displayLoadPower(data);
         } else {
           value = pickDataValue(data, field.keys, field.sections);
+        }
+        if (field.solarVoltage) {
+          const numericValue = parseNumber(value);
+          if (numericValue !== null && Math.abs(numericValue) < 10) {
+            value = 0;
+          }
         }
         if (!isDataValuePresent(value)) {
           return null;
@@ -856,7 +860,7 @@ async function loadStatus() {
   const statusData = await fetchJson("/api/status");
   renderStatus(statusData);
 
-  if (!hasAny(["deviceDetectedModel", "deviceFirmwareVersion", "reportDeviceBtn"])) {
+  if (!hasAny(["deviceDetectedModel", "deviceFirmwareVersion"])) {
     return;
   }
 
@@ -864,71 +868,6 @@ async function loadStatus() {
     state.reportContext = await fetchJson("/api/data");
     renderStatus(statusData);
   } catch (error) {
-  }
-}
-
-async function openReportDeviceForm() {
-  const popup = window.open("", "_blank");
-  if (popup) {
-    popup.opener = null;
-    try {
-      popup.document.title = "Opening report form";
-      popup.document.body.textContent = "Opening report form...";
-    } catch (error) {
-      // Ignore interim document access issues and continue with navigation.
-    }
-  }
-
-  const [statusData, fullData] = await Promise.all([
-    fetchJson("/api/status"),
-    fetchJson("/api/data"),
-  ]);
-  state.reportContext = fullData;
-
-  const params = new URLSearchParams();
-  appendQueryValue(
-    params,
-    "protocol_detected",
-    firstPresentValue([
-      statusData?.protocol,
-      fullData?.Status?.protocol,
-      fullData?.EspData?.detect_protocol_name,
-    ])
-  );
-  appendQueryValue(
-    params,
-    "protocol_id",
-    firstPresentValue([
-      fullData?.DeviceData?.Protocol_ID,
-      statusData?.protocol,
-    ])
-  );
-  appendQueryValue(
-    params,
-    "device_model_detected",
-    getDeviceDetectedModel(fullData)
-  );
-  appendQueryValue(
-    params,
-    "firmware_version",
-    getDeviceFirmwareVersion(fullData)
-  );
-  appendQueryValue(
-    params,
-    "build_variant",
-    firstPresentValue([
-      statusData?.buildVariant,
-      statusData?.build,
-    ])
-  );
-
-  const reportUrl = params.toString()
-    ? `${REPORT_DEVICE_FORM_URL}?${params.toString()}`
-    : REPORT_DEVICE_FORM_URL;
-  if (popup) {
-    popup.location.replace(reportUrl);
-  } else {
-    window.location.href = reportUrl;
   }
 }
 
@@ -1231,10 +1170,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     await download("/api/debug/report", "solar2mqtt-debug.txt", "text/plain");
   });
 
-  bindClick("reportDeviceBtn", async () => {
-    await openReportDeviceForm();
-    showNotice("Report form opened.");
-  });
 
   bindClick("previewDataBtn", async () => {
     await loadDataPreview();

@@ -64,6 +64,10 @@ static const HaEntityDescriptor HA_STATIC_DESCRIPTORS[] = {
 };
 
 static const HaEntityDescriptor HA_LIVE_DESCRIPTORS[] = {
+    {"Battery_Current_0157_Experimental", "battery-outline", "A", "current", "measurement"},
+    {"Inverter_Battery_Percent", "battery-high", "%", ""},
+    {"Battery_Current", "battery-outline", "A", "current", "measurement"},
+    {"DC_Bus_Voltage", "flash-triangle-outline", "V", "voltage", "measurement"},
     {DESCR_AC_In_Frequency, "import", "Hz", "frequency", "measurement"},
     {DESCR_AC_In_Frequency_L1, "import", "Hz", "frequency", "measurement"},
     {DESCR_AC_In_Frequency_L2, "import", "Hz", "frequency", "measurement"},

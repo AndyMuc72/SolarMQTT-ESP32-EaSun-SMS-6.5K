@@ -15,6 +15,7 @@
 #include "device/smg/smg.h"
 #include "device/smg_ii_11kw/smg_ii_11kw.h"
 #include "device/powmr/powmr.h"
+#include "device/easun_sms/easun_sms.h"
 
 extern JsonObject deviceJson;
 extern JsonObject staticData;

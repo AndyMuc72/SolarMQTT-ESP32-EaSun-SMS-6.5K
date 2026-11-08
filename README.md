@@ -1,4 +1,16 @@
-# Solar2MQTT [![GitHub release](https://img.shields.io/github/release/softwarecrash/Solar2MQTT?include_prereleases=&sort=semver&color=blue)](https://github.com/softwarecrash/Solar2MQTT/releases/latest) [![Discord](https://img.shields.io/discord/1007020337482973254?logo=discord&label=Discord)](https://discord.gg/fb2nZWDExz)
+# Solar2MQTT ESP32 EaSun SMS 6.5K [![GitHub release](https://img.shields.io/github/v/release/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K?include_prereleases&sort=semver&color=blue)](https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/releases/latest) [![EASUN build](https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/actions/workflows/easun-build.yml/badge.svg)](https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/actions/workflows/easun-build.yml)
+
+This ESP32 fork targets the EASUN iSolar-SMS-6.5KP-WiFi / SMS-6.5KP family. See [the read-only CVTE register map and target validation notes](Protocol/EASUN_SMS_CVTE_READ_ONLY.md) before relying on individual readings. The WiFi-labelled firmware 8 unit has target-specific corrections for output watts, load percentage, battery current, DC bus voltage, and inverter-reported SOC.
+
+## Public release 0.1.0-easun.7
+
+The current integration source tracks the latest upstream main as `0.1.0-easun.8-dev`; [merge decisions and validation status](UPSTREAM_SYNC.md) are recorded separately. The published version-7 tag and assets remain unchanged.
+
+Normal releases contain **no personal Wi-Fi defaults or saved configuration**. This is also the policy for future releases. Private recovery files must never be published. See [release notes, test status and USB/OTA instructions](RELEASE_NOTES.md). Versions `.5` and `.6` are known problematic user-reported releases; `.7` is based on `.4` with the tested UI and update-check repairs.
+
+## EASUN SMS-6.5KP fork
+
+Read-only telemetry for the single-MPPT EASUN iSolar-SMS-6.5KP-Wifi is tracked in [Protocol/EASUN_SMS_CVTE_READ_ONLY.md](Protocol/EASUN_SMS_CVTE_READ_ONLY.md). Build status: [![EASUN ESP32 build](https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/actions/workflows/easun-build.yml/badge.svg?branch=codex/easun-sms-support)](https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/actions/workflows/easun-build.yml). A successful build is compile status, not physical inverter validation.
 
 # Looking for the ESP8266 Variant? go [HERE](https://github.com/softwarecrash/Solar2MQTT-ESP8266)
 
@@ -9,7 +21,7 @@
 - Full Controll with [Custom commands](https://github.com/softwarecrash/Solar2MQTT/wiki/Set-parameters)
 - get essential data over webinterface, get [all data](https://github.com/softwarecrash/Solar2MQTT/wiki/Datapoints-and-units) over MQTT
 - classic MQTT datapoints or Json string over MQTT
-- get Json over web at /livejson?
+- get status JSON over web at `/api/status`
 - firmware update over webinterface
 - debug log over USB or Webserial
 - [blink codes](https://github.com/softwarecrash/Solar2MQTT/wiki/Blink-Codes) for the current state of the ESP

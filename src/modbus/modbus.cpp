@@ -1111,6 +1111,9 @@ bool MODBUS::forceProtocol(protocol_type_t protocol)
     case MODBUS_DEYE:
         device = new Deye();
         break;
+    case MODBUS_EASUN_SMS:
+        device = new EasunSms();
+        break;
     case MODBUS_SMG_II_11KW:
         device = new SMGII11KW();
         break;
@@ -1153,7 +1156,8 @@ protocol_type_t MODBUS::autoDetect(bool powMrOnly) // function for autodetect th
     writeLog("Try Autodetect Modbus device");
     _mCom.setResponseTimeout(MODBUS_DETECTION_TIMEOUT_MS);
 
-    ModbusDevice *devices[] = { new PowMr(), new Deye(), new SMGII11KW(), new SMG(), new AnenjiSrne(), new Anenji(), new MustPV_PH18()};
+    // Probe the model-specific SMS identity before generic protocol candidates.
+    ModbusDevice *devices[] = { new PowMr(), new EasunSms(), new Deye(), new SMGII11KW(), new SMG(), new AnenjiSrne(), new Anenji(), new MustPV_PH18()};
     const size_t deviceCount = sizeof(devices) / sizeof(devices[0]);
 
     for (size_t i = 0; i < deviceCount; ++i)

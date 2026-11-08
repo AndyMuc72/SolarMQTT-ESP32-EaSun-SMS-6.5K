@@ -1,0 +1,67 @@
+name: EASUN ESP32 build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Wemos D1 mini ESP32 firmware
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate public defaults and dashboard
+        run: |
+          python tools/check_public_build.py
+          node tests/test_ui.cjs
+          node tests/host/test_pv_total.cjs
+
+      - name: Install PlatformIO
+        run: python -m pip install platformio==6.2.0
+
+      - name: Build firmware
+        run: pio run -e wemos_d1_mini32
+
+      - name: Validate release images
+        run: python tools/check_release_images.py
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: easun-sms-esp32-firmware
+          path: |
+            .pio/build/wemos_d1_mini32/*.bin
+            .firmware/*.bin*
+          if-no-files-found: error
+          retention-days: 30
+          include-hidden-files: true
+
+      - name: Attach firmware to GitHub release
+        if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref, 'refs/heads/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          name: SolarMQTT ESP32 EaSun SMS 6.5K ${{ github.ref_name }}
+          prerelease: true
+          generate_release_notes: true
+          body_path: RELEASE_NOTES.md
+          files: .firmware/*.bin*
