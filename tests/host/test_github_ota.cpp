@@ -594,7 +594,7 @@ static void easunForkReleases()
         const auto result = status(u);
         assert(result["state"] == state);
         assert(result["latest"] == latest);
-        assert(ota.url == "https://api.github.com/repos/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/releases?per_page=20");
+        assert(ota.url.find("https://raw.githubusercontent.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/main/ota/releases.json?check=") == 0);
         assert(ota.updateBegins == 0);
         dispose(u);
     };
@@ -621,6 +621,29 @@ static void easunForkReleases()
     std::puts("PASS: EASUN prereleases, unordered list, draft/unrelated exclusion, blocked .5/.6, matching asset, empty list and development version.");
 }
 
+static void easunIndexFallbacks()
+{
+    for (const auto &codes : std::vector<std::vector<int>>{{504,200},{503,504,200},{404,200},{-1,200}})
+    {
+        reset();
+        ota.response = R"([{"tag_name":"v0.1.0-easun.8","assets":[{"name":"Solar2MQTT_wemos_d1_mini32_V0.1.0-easun.8.bin.ota","browser_download_url":"https://example.invalid/8"}]}])";
+        ota.httpCodes = codes;
+        GitHubOtaUpdater u("AndyMuc72","SolarMQTT-ESP32-EaSun-SMS-6.5K","0.1.0-easun.7","wemos_d1_mini32");
+        u.begin([]{return true;});u.doCheck();
+        assert(status(u)["state"] == "update_available");
+        assert(ota.getCalls == codes.size() && ota.updateBegins == 0);
+        if(codes.size()==3 || codes[0]==404)
+            assert(ota.url == "https://api.github.com/repos/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/releases?per_page=20");
+        dispose(u);
+    }
+    reset();ota.code=504;
+    GitHubOtaUpdater failed("AndyMuc72","SolarMQTT-ESP32-EaSun-SMS-6.5K","0.1.0-easun.7","wemos_d1_mini32");
+    failed.begin([]{return true;});failed.doCheck();
+    assert(status(failed)["state"] == "error" && ota.getCalls==3 && ota.updateBegins==0);
+    dispose(failed);
+    std::puts("PASS: compact index retries transient HTTP failures, falls back to API and never reports failed checks as up-to-date.");
+}
+
 int main(int argc, char **argv)
 {
     assert(argc >= 2);
@@ -644,6 +667,7 @@ int main(int argc, char **argv)
         statusGuard();
         allocationFailures();
         easunForkReleases();
+        easunIndexFallbacks();
     }
     std::puts("GitHub OTA production checks passed.");
 }

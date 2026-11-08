@@ -344,8 +344,14 @@ void GitHubOtaUpdater::doCheck()
     // upstream's stable-only policy.
     const bool forkReleases = _owner == "AndyMuc72" &&
         _repo == "SolarMQTT-ESP32-EaSun-SMS-6.5K";
-    const String url = "https://api.github.com/repos/" + _owner + "/" + _repo +
+    const String apiUrl = "https://api.github.com/repos/" + _owner + "/" + _repo +
         (forkReleases ? "/releases?per_page=20" : "/releases/latest");
+    // The compact index is updated only after public release assets exist.
+    // It avoids downloading release descriptions and GitHub API outages/limits.
+    String url = forkReleases
+        ? "https://raw.githubusercontent.com/" + _owner + "/" + _repo +
+            "/main/ota/releases.json?check=" + String(millis())
+        : apiUrl;
 
     WiFiClientSecure client;
     client.setInsecure();
@@ -363,6 +369,8 @@ void GitHubOtaUpdater::doCheck()
             return false;
         http.addHeader("Accept", "application/vnd.github+json");
         http.addHeader("X-GitHub-Api-Version", "2022-11-28");
+        http.addHeader("Accept-Encoding", "identity");
+        http.addHeader("Cache-Control", "no-cache");
         return true;
     };
     if (!beginReleaseRequest())
@@ -374,7 +382,8 @@ void GitHubOtaUpdater::doCheck()
     int httpCode = http.GET();
     // A metadata GET is safe to reconnect once after a transient transport
     // failure. Release TLS resources first; never retry firmware writes here.
-    if (httpCode < 0)
+    if (httpCode < 0 || (forkReleases &&
+        (httpCode == 502 || httpCode == 503 || httpCode == 504)))
     {
         http.end();
         client.stop();
@@ -382,6 +391,20 @@ void GitHubOtaUpdater::doCheck()
         if (!beginReleaseRequest())
         {
             setState(State::Error, "Failed to reconnect to GitHub");
+            return;
+        }
+        httpCode = http.GET();
+    }
+    if (forkReleases && httpCode != 200)
+    {
+        // One bounded fallback for installations whose index is unavailable.
+        // Never interpret failed requests as an up-to-date result.
+        http.end();
+        client.stop();
+        url = apiUrl;
+        if (!beginReleaseRequest())
+        {
+            setState(State::Error, "Failed to connect to release fallback");
             return;
         }
         httpCode = http.GET();
