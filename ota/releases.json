@@ -1,0 +1,15 @@
+[
+  {
+    "tag_name": "v0.1.0-easun.7",
+    "draft": false,
+    "prerelease": true,
+    "assets": [
+      {
+        "name": "Solar2MQTT_wemos_d1_mini32_V0.1.0-easun.7.bin.ota",
+        "browser_download_url": "https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/releases/download/v0.1.0-easun.7/Solar2MQTT_wemos_d1_mini32_V0.1.0-easun.7.bin.ota",
+        "size": 1648480,
+        "digest": "sha256:3b169bae6874b5bd4a4e83753f9396b6fe9421ae4224bd9ff5b42a9e8d7e14cd"
+      }
+    ]
+  }
+]
