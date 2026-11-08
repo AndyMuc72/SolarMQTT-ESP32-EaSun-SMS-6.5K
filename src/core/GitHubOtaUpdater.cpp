@@ -394,9 +394,9 @@ void GitHubOtaUpdater::doCheck()
     }
 
     JsonDocument filter;
-    JsonVariant filterEntry = forkReleases
-        ? filter.to<JsonArray>().add<JsonObject>().as<JsonVariant>()
-        : filter.to<JsonObject>().as<JsonVariant>();
+    JsonObject filterEntry = forkReleases
+        ? filter.to<JsonArray>().add<JsonObject>()
+        : filter.to<JsonObject>();
     filterEntry["tag_name"] = true;
     filterEntry["name"] = true;
     filterEntry["draft"] = true;
