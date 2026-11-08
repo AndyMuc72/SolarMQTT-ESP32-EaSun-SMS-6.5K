@@ -610,6 +610,11 @@ static void easunForkReleases()
     check(body, "0.1.0-easun.4", "update_available", "0.1.0-easun.7");
     check(body, "0.1.0-easun.7", "up_to_date", "0.1.0-easun.7");
     check(body, "0.1.0-easun.8-dev", "up_to_date", "0.1.0-easun.7");
+    check(body, "0.1.0-easun.7-local", "update_available", "0.1.0-easun.7");
+    const char *future = R"([{"tag_name":"v0.1.0-easun.9","prerelease":true,"assets":[{"name":"Solar2MQTT_wemos_d1_mini32_V0.1.0-easun.9.bin.ota","browser_download_url":"https://example.invalid/easun9"}]}])";
+    check(future, "0.1.0-easun.8-dev", "update_available", "0.1.0-easun.9");
+    check(future, "0.1.0-easun.9-dev", "update_available", "0.1.0-easun.9");
+    check(R"([{"tag_name":"v0.1.0-easun.99-dev"},{"tag_name":"v0.1.0-easun.99-local"}])", "0.1.0-easun.7", "error", "");
     check(R"([{"tag_name":"v0.1.0-easun.5"},{"tag_name":"v0.1.0-easun.6"}])", "0.1.0-easun.4", "error", "");
     check("[]", "0.1.0-easun.4", "error", "");
     check(R"([{"tag_name":"invalid"},{"tag_name":"v0.1.0-easun.7","assets":[]}])", "0.1.0-easun.4", "error", "0.1.0-easun.7");

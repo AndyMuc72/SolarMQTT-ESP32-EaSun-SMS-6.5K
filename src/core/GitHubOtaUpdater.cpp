@@ -443,7 +443,8 @@ void GitHubOtaUpdater::doCheck()
             if (candidate["draft"] | false) continue;
             const String version = normalizeVersion(candidate["tag_name"] | candidate["name"] | "");
             if (!isValidVersion(version) || !version.startsWith("0.1.0-easun.") ||
-                version == "0.1.0-easun.5" || version == "0.1.0-easun.6") continue;
+                version == "0.1.0-easun.5" || version == "0.1.0-easun.6" ||
+                version.endsWith("-dev") || version.endsWith("-local")) continue;
             if (selected.isNull() || compareVersions(version, selectedVersion) > 0)
             {
                 selected = candidate;
@@ -475,7 +476,25 @@ void GitHubOtaUpdater::doCheck()
     _latestVersion = latestVersion;
     unlock();
 
-    if (compareVersions(latestVersion, _currentVersion) <= 0)
+    // The EASUN development/local suffix belongs to the numeric release train,
+    // rather than SemVer's alphanumeric identifier ordering (where 8-dev > 9).
+    String comparisonCurrent = normalizeVersion(_currentVersion);
+    bool privateOrDevelopmentBuild = false;
+    if (forkReleases && comparisonCurrent.startsWith("0.1.0-easun."))
+    {
+        if (comparisonCurrent.endsWith("-dev"))
+        {
+            comparisonCurrent.remove(comparisonCurrent.length() - 4);
+            privateOrDevelopmentBuild = true;
+        }
+        else if (comparisonCurrent.endsWith("-local"))
+        {
+            comparisonCurrent.remove(comparisonCurrent.length() - 6);
+            privateOrDevelopmentBuild = true;
+        }
+    }
+    const int releaseOrder = compareVersions(latestVersion, comparisonCurrent);
+    if (releaseOrder < 0 || (releaseOrder == 0 && !privateOrDevelopmentBuild))
     {
         setState(State::UpToDate, "");
         return;
