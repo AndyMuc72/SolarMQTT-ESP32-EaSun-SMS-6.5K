@@ -1,4 +1,8 @@
 #include "core/GitHubOtaUpdater.h"
+#include "core/OtaResponseReader.h"
+#if defined(EASUN_OTA_SELF_TEST)
+#include "core/OtaReaderSelfTest.h"
+#endif
 
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
@@ -13,6 +17,10 @@ namespace
 constexpr uint32_t kOtaTaskStack = 8192;
 constexpr uint32_t kHttpTimeoutMs = 15000;
 constexpr const char *kUserAgent = "Solar2MQTT-OTA";
+struct OtaClock {
+    uint32_t now() const { return millis(); }
+    void pause() { vTaskDelay(1); }
+};
 }
 
 GitHubOtaUpdater::GitHubOtaUpdater(const char *owner,
@@ -29,6 +37,9 @@ GitHubOtaUpdater::GitHubOtaUpdater(const char *owner,
 void GitHubOtaUpdater::begin(std::function<bool()> networkConnected)
 {
     _networkConnected = std::move(networkConnected);
+#if defined(EASUN_OTA_SELF_TEST)
+    runOtaReaderSelfTests();
+#endif
     if (_lockHandle == nullptr)
     {
         _lockHandle = xSemaphoreCreateMutex();
@@ -62,13 +73,13 @@ bool GitHubOtaUpdater::requestCheck()
     setState(State::Checking, "");
 
     TaskHandle_t handle = nullptr;
+    lock();
     if (xTaskCreate(checkTask, "solar_ota_check", kOtaTaskStack, this, 1, &handle) != pdPASS)
     {
+        unlock();
         setState(State::Error, "Failed to start update check task");
         return false;
     }
-
-    lock();
     _task = handle;
     unlock();
     return true;
@@ -91,13 +102,13 @@ bool GitHubOtaUpdater::startUpdate()
     setState(State::Downloading, "");
 
     TaskHandle_t handle = nullptr;
+    lock();
     if (xTaskCreate(downloadTask, "solar_ota_dl", kOtaTaskStack, this, 1, &handle) != pdPASS)
     {
+        unlock();
         setState(State::Error, "Failed to start update task");
         return false;
     }
-
-    lock();
     _task = handle;
     unlock();
     return true;
@@ -187,8 +198,6 @@ void GitHubOtaUpdater::doCheck()
     http.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
     http.setTimeout(kHttpTimeoutMs);
     http.setUserAgent(kUserAgent);
-    http.addHeader("Accept", "application/vnd.github+json");
-    http.addHeader("X-GitHub-Api-Version", "2022-11-28");
 
     if (!http.begin(client, url))
     {
@@ -196,6 +205,9 @@ void GitHubOtaUpdater::doCheck()
         return;
     }
 
+    http.addHeader("Accept", "application/vnd.github+json");
+    http.addHeader("X-GitHub-Api-Version", "2022-11-28");
+    http.addHeader("Accept-Encoding", "identity");
     const int httpCode = http.GET();
     if (httpCode != 200)
     {
@@ -204,14 +216,11 @@ void GitHubOtaUpdater::doCheck()
         return;
     }
 
-    const String payload = http.getString();
-    http.end();
-
-    if (payload.length() == 0)
-    {
-        setState(State::Error, "Release response empty");
-        return;
-    }
+    // Parse the filtered release list while TLS remains open. getString()
+    // buffered the entire response and discarded writeToStream() failures.
+    // The reproduced IncompleteInput must never be treated as no update.
+    Serial.printf("[OTA] Release HTTP %d, length=%d, heap=%u, largest=%u\n",
+                  httpCode, http.getSize(), ESP.getFreeHeap(), ESP.getMaxAllocHeap());
 
     JsonDocument filter;
     JsonObject releaseFilter = filter.to<JsonArray>().add<JsonObject>();
@@ -221,16 +230,16 @@ void GitHubOtaUpdater::doCheck()
     assetFilter["browser_download_url"] = true;
 
     JsonDocument doc;
-    const DeserializationError error = deserializeJson(doc, payload, DeserializationOption::Filter(filter));
+    OtaClock clock;
+    OtaResponseReader<WiFiClientSecure, OtaClock> reader(client, clock, kHttpTimeoutMs);
+    const DeserializationError error = deserializeJson(doc, reader, DeserializationOption::Filter(filter));
+    Serial.printf("[OTA] Parsed bytes=%u, timeout=%d, result=%s\n",
+                  static_cast<unsigned>(reader.bytesRead()), reader.timedOut(), error.c_str());
+    http.end();
     if (error)
     {
         String details = "Release JSON parse error: ";
         details += error.c_str();
-        if (!payload.startsWith("["))
-        {
-            details += " / starts with: ";
-            details += payload.substring(0, 48);
-        }
         setState(State::Error, details);
         return;
     }
@@ -239,7 +248,8 @@ void GitHubOtaUpdater::doCheck()
     for (JsonObjectConst release : doc.as<JsonArray>())
     {
         const String latestVersion = normalizeVersion(release["tag_name"] | "");
-        if (!latestVersion.length())
+        // Known defective releases on the user's target are excluded.
+        if (!latestVersion.length() || latestVersion == "0.1.0-easun.5" || latestVersion == "0.1.0-easun.6")
         {
             continue;
         }

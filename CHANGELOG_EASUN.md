@@ -1,5 +1,12 @@
 # EASUN SMS fork release notes
 
+## 0.1.0-easun.7
+
+- Rebase repairs on working `.4`; fix `.6` dashboard syntax and GitHub HTTPS JSON truncation/task-handle race.
+- Add mandatory syntax/dashboard CI checks, empty Wi-Fi-default guard, release image integrity checks and SHA256 files.
+- Keep raw telemetry unchanged; apply requested experimental EASUN load-display substitution and solar display threshold below 10.
+- Publish only ordinary firmware without personal Wi-Fi configuration. See [full test status and installation notes](RELEASE_NOTES.md).
+
 ## 0.1.0-easun.4
 
 - Use the target-validated `0x021C` value as `AC_Out_Watt`; keep `0x0085` visible only as a reference because it read 0 W while the WiFi/FW8 target reported 128 W at low load.
