@@ -5,6 +5,7 @@ const state = {
   commandWaiting: false,
   previewFocusTimers: {},
   reportContext: null,
+  activeProtocol: "",
 };
 
 
@@ -763,6 +764,7 @@ function renderStatus(data) {
     data.EspData?.detect_protocol_name ||
     data.protocol ||
     "";
+  state.activeProtocol = activeProtocol;
   setText("metricPvPower", formatValue(totalSolarPower(data), " W"));
   setText("metricBatteryPercent", formatValue(data.LiveData?.Battery_Percent, " %"));
   setText("metricBatteryVoltage", formatValue(data.LiveData?.Battery_Voltage ?? data.LiveData?.Positive_Battery_Voltage, " V"));
@@ -1219,7 +1221,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   bindClick("powmrWatchBtn", async () => {
     const body = new URLSearchParams();
-    body.set("command", "powmr watch");
+    body.set("command", state.activeProtocol === "MODBUS_EASUN_SMS" ? "easun watch" : "powmr watch");
     await fetchJson("/api/command", { method: "POST", body });
     const data = await waitForCommandAnswer();
     const answer = data.RawData?.CommandAnswer || "-";
@@ -1229,7 +1231,9 @@ window.addEventListener("DOMContentLoaded", async () => {
       preview.textContent = JSON.stringify(data || {}, null, 2);
     }
     setText("dataPreviewMeta", `Last updated: ${new Date().toLocaleTimeString("en-GB")}`);
-    if (answer.startsWith("POWMR_WATCH")) {
+    if (answer.startsWith("EASUN_WATCH") && answer.includes("ERROR:")) {
+      showNotice("Register watch incomplete; see failed blocks in the answer.", true);
+    } else if (answer.startsWith("POWMR_WATCH") || answer.startsWith("EASUN_WATCH")) {
       showNotice("Register watch snapshot loaded.");
     } else if (answer && answer !== "-") {
       showNotice(answer, true);
