@@ -2,10 +2,11 @@
 const { harness } = require('./support/native.cjs');
 const native = { groups: [] };
 
-const portable = ["pi-transport","powmr-pv2","pv-total","qpigs2","pv2-polling"];
+const portable = ["pi-transport","powmr-pv2","pv-total","qpigs2","pv2-polling","easun-diagnostics"];
 const groups = [...portable, ...native.groups];
 
 async function runGroup(group) {
+  if (group === 'easun-diagnostics') return require('./run_easun_diagnostics.cjs');
   if (native.groups.includes(group)) return native.runGroup(group);
   if (group === 'pv2-polling') return require('./run_pv2_polling.cjs').runTests();
   if (group === 'qpigs2') return require('./run_qpigs2.cjs').runTests();
