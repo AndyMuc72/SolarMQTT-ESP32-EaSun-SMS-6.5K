@@ -1,23 +1,23 @@
-# 0.1.0-easun.8 — reliable fork OTA discovery
+# 0.1.0-easun.9 — separate watts and VA; EASUN diagnostics
 
-The update checker now reads a small release index from this repository instead of relying on the GitHub release-list API that returned HTTP 503/504 during real-device tests. Published EASUN releases, including prereleases, are downloaded from this repository's board-specific GitHub release assets.
+The dashboard previously substituted the apparent-power register (VA) for active output power and labelled the result W. This release corrects both the load summary and AC Out L1: watts come from the existing active-power fields, and apparent power is shown separately with a VA badge. A missing watt measurement is not replaced by VA; a genuine zero-watt measurement remains zero.
 
-## Behavior
+## Included diagnostics
 
-- A successful check reports **Up to date** when no newer eligible release exists. A newer release enables the update button; clicking it downloads the matching `*.bin.ota`, writes it and restarts the device.
-- `ota/releases.json` is refreshed automatically after release assets exist, for both workflow-created and manually published releases. No GitHub token is stored on the ESP32.
-- Transient index HTTP 502/503/504 or transport failures receive one bounded retry, followed by an API fallback if needed. Failed checks remain errors and are never disguised as up-to-date results.
-- Drafts, `.5`/`.6`, development/local releases and wrong-board assets remain excluded. Local/development builds can upgrade to their corresponding ordinary release.
-- Includes upstream synchronization and OTA writer/restart safeguards. EASUN register addresses, measurement scaling and version-7 partition layout remain unchanged.
+Register Watch now sends `easun watch` for MODBUS_EASUN_SMS. Command Sender accepts `easun read 0x0152` or `easun read 0x0219 8`. Reads are FC03 only, 1–15 registers per request, through the existing serial command consumer. Raw output includes hex, unsigned and signed 16-bit values and communication failures. See [diagnostic instructions](Protocol/EASUN_REGISTER_DIAGNOSTICS.md).
+
+## Measurement status
+
+[Display comparisons from 2026-11-14](Protocol/EASUN_DISPLAY_COMPARISON_2026-11-14.md) support battery voltage, output frequency and daily PV energy at the observed points. Displayed output watts are close to both candidate power registers, but timing and load differences prevent choosing a new mapping. Output current, apparent power, low-current battery reporting and authoritative BMS SOC remain unresolved. This release changes no telemetry addresses, scaling or raw JSON/MQTT values. Displaying VA separately does not validate that reading.
 
 ## Installation and privacy
 
-- Public images contain **no personal Wi-Fi defaults or saved configuration**. Private recovery files remain private.
-- USB: flash `Solar2MQTT_wemos_d1_mini32_V0.1.0-easun.8.bin` at **0x0**. This merged image clears configuration; set up Wi-Fi afterward.
-- Manual OTA: upload `Solar2MQTT_wemos_d1_mini32_V0.1.0-easun.8.bin.ota` through `/firmware`; existing configuration is preserved. App-only OTA does not migrate partition tables.
-- Firmware still using the API-only checker may need this repair installed manually once if its GitHub API requests continue to fail. Subsequent releases use the compact index and the update button.
-- SHA256 sidecars are supplied. Only use the correct board variant.
+- Public images contain no personal Wi-Fi defaults or saved configuration.
+- Manual OTA: upload `Solar2MQTT_wemos_d1_mini32_V0.1.0-easun.9.bin.ota` through `/firmware`. The unchanged partition layout preserves existing configuration with app-only OTA.
+- USB: flash `Solar2MQTT_wemos_d1_mini32_V0.1.0-easun.9.bin` at `0x0`. This is a complete 4 MB image with empty NVS and clears existing configuration.
+- Fork OTA discovery uses this repository's compact release index; `.5` and `.6` remain excluded. An installed `.9-dev` can upgrade to this ordinary `.9` release.
+- SHA256 sidecars are supplied. Use the matching Wemos D1 mini ESP32 variant.
 
 ## Test status
 
-Publication requires the Wemos build, image-integrity/empty-NVS checks, dashboard tests and release-index publisher tests. Production OTA tests cover parsing, index retries/fallback, invalid/truncated JSON, board matching, blocked releases and write failures. Real-device check/update results are recorded in `OTA_VALIDATION.md`; full inverter/BMS measurements and long-duration stability remain unverified.
+Release publication follows successful dashboard/W–VA separation and raw-data preservation tests, diagnostic parser and Watch-handler tests, OTA manifest tests, host regressions and the Wemos firmware build/image-integrity/empty-NVS checks. CI links record the actual results. No new physical-device installation or long-duration test is claimed for this build; `.9-dev` diagnostic responses and the display comparisons were supplied by the user.

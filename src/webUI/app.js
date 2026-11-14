@@ -196,6 +196,7 @@ const OVERVIEW_GROUPS = [
       { label: "V", keys: ["AC_Out_Voltage_L1", "AC_Out_Voltage", "AC_Output_Voltage"], unit: "V", decimals: 1 },
       { label: "Hz", keys: ["AC_Out_Frequency_L1", "AC_Out_Frequency", "AC_Output_Frequency"], unit: "Hz", decimals: 1 },
       { label: "W", displayLoadPower: true, unit: "W", decimals: 0 },
+      { label: "VA", keys: ["AC_Out_VA_L1", "AC_Out_VA"], unit: "VA", decimals: 0 },
       { label: "%", keys: ["AC_Out_Percent_L1", "AC_Out_Percent", "Output_Load_Percent"], unit: "%", decimals: 0 },
       { label: "A", keys: ["AC_Out_Current_L1", "AC_Output_Current", "Output_Current"], unit: "A", decimals: 1 },
     ],
@@ -400,16 +401,8 @@ function getSolarChannelInfo(data, channel = 1) {
 }
 
 function displayLoadPower(data) {
-  const protocol = [
-    data?.Status?.protocol,
-    data?.protocol,
-    data?.EspData?.detect_protocol_name,
-    data?.DeviceData?.Protocol_ID,
-  ].find((value) => typeof value === "string" && value.length > 0) || "";
-  const isEasunSms = protocol === "MODBUS_EASUN_SMS";
-  const keys = isEasunSms
-    ? ["AC_Out_VA_L1", "AC_Out_VA", "AC_Out_Watt_L1", "AC_Out_Watt", "AC_Output_Power", "Output_Power"]
-    : ["AC_Out_Watt_L1", "AC_Out_Watt", "AC_Output_Power", "Output_Power"];
+  // Apparent power (VA) must never substitute for active power (W).
+  const keys = ["AC_Out_Watt_L1", "AC_Out_Watt", "AC_Output_Active_Power", "AC_Output_Power", "Output_Power"];
   return pickDataValue(data, keys, ["LiveData"]);
 }
 

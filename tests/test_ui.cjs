@@ -20,7 +20,7 @@ for(let i=0;i<=1000;i++){
   assert.equal(run('getSolarChannelInfo(testData).voltage'),v<10?0:v);
   assert.equal(run('getSolarChannelInfo(testData).power'),p<10?0:p);
   assert.equal(run('totalSolarPower(testData)'),p<10?0:p);
-  assert.equal(run('displayLoadPower(testData)'),353);
+  assert.equal(run('displayLoadPower(testData)'),144);
   run('renderOverview(testData)');
   assert.equal(JSON.stringify(data),before,'UI must not mutate raw telemetry');count+=5;
 }
@@ -31,4 +31,16 @@ ctx.testData={protocol:'OTHER',LiveData:{AC_Out_VA:353,AC_Out_Watt:144}};assert.
 ctx.testData={protocol:'MODBUS_EASUN_SMS',LiveData:{AC_Out_Watt:144}};assert.equal(run('displayLoadPower(testData)'),144);count++;
 ctx.testData={LiveData:{PV1_Input_Power:9.9}};assert.equal(run('totalSolarPower(testData)'),0);count++;
 ctx.testData={LiveData:{PV1_Input_Power:10}};assert.equal(run('totalSolarPower(testData)'),10);count++;
-console.log(`PASS ${count} assertions, including syntax regression, threshold boundaries, 1001 dashboard renders, raw telemetry preservation and output-power fallback.`);
+// Regression: a VA-only sample must never appear as watts; zero W is valid.
+for(const protocol of ['MODBUS_EASUN_SMS','OTHER']){
+ for(const live of [{AC_Out_Watt:176,AC_Out_VA:398},{AC_Out_Watt:0,AC_Out_VA:111},{AC_Out_VA:400},{AC_Output_Active_Power:168,AC_Out_VA:400}]){
+  ctx.testData={protocol,LiveData:live};
+  assert.equal(run('displayLoadPower(testData)'),live.AC_Out_Watt ?? live.AC_Output_Active_Power ?? null);count++;
+ }
+}
+ctx.testData={protocol:'MODBUS_EASUN_SMS',LiveData:{AC_Out_Watt:176,AC_Out_VA:398}};
+run('renderOverview(testData)');
+function treeText(node){return [node.textContent,...node.children.map(treeText)].join(' ');}
+const rendered=treeText(nodes.get('overviewRows'));
+assert(rendered.includes('176 W'));assert(rendered.includes('398 VA'));assert(!rendered.includes('398 W'));count+=3;
+console.log(`PASS ${count} assertions, including syntax regression, threshold boundaries, 1001 dashboard renders, raw telemetry preservation and separate W/VA output.`);
