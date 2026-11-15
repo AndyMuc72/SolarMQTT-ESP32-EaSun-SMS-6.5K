@@ -1,5 +1,6 @@
 // #define isDEBUG
 #include "modbus.h"
+#include "easun_diagnostics.h"
 
 #include <cerrno>
 #include <cmath>
@@ -440,6 +441,36 @@ void MODBUS::runPowmrDump()
 String MODBUS::requestData(String command)
 {
     command.trim();
+    if (command == "easun" || command.startsWith("easun "))
+    {
+        if (device == nullptr || device->getProtocol() != MODBUS_EASUN_SMS)
+            return "ERROR: EASUN diagnostics require MODBUS_EASUN_SMS";
+        // Called by the existing PI_Serial command queue, never a separate UART task.
+        auto read = [this](const EasunDiagnostics::Request &range) -> String {
+            _mCom.clearReadCache();
+            const std::string text = EasunDiagnostics::read(range,
+                [this](uint16_t address, uint16_t count, uint16_t *words, uint8_t &result) {
+                    return _mCom.readHoldingBlockOnce(address, count, words, count, 400, &result);
+                });
+            _mCom.clearReadCache();
+            return String(text.c_str());
+        };
+        if (command == "easun watch")
+        {
+            String answer = "EASUN_WATCH FC03 raw snapshot; candidates are not validated mappings\n";
+            answer += read({0x0100, 3});
+            answer += "\n";
+            answer += read({0x0152, 6});
+            answer += "\n";
+            answer += read({0x0219, 8});
+            return answer;
+        }
+        EasunDiagnostics::Request range;
+        if (command.startsWith("easun read ") &&
+            EasunDiagnostics::parse(command.c_str() + 11, range))
+            return String("EASUN_READ FC03 raw; no scaling\n") + read(range);
+        return "ERROR: use easun read <decimal|0xHEX address> [count 1..15], or easun watch; read-only FC03";
+    }
     if (device != nullptr && device->getProtocol() == MODBUS_POWMR &&
         command.startsWith("powmr hunt"))
         return powmrHuntCommand(command);

@@ -5,6 +5,7 @@ const state = {
   commandWaiting: false,
   previewFocusTimers: {},
   reportContext: null,
+  activeProtocol: "",
 };
 
 
@@ -195,6 +196,7 @@ const OVERVIEW_GROUPS = [
       { label: "V", keys: ["AC_Out_Voltage_L1", "AC_Out_Voltage", "AC_Output_Voltage"], unit: "V", decimals: 1 },
       { label: "Hz", keys: ["AC_Out_Frequency_L1", "AC_Out_Frequency", "AC_Output_Frequency"], unit: "Hz", decimals: 1 },
       { label: "W", displayLoadPower: true, unit: "W", decimals: 0 },
+      { label: "VA", keys: ["AC_Out_VA_L1", "AC_Out_VA"], unit: "VA", decimals: 0 },
       { label: "%", keys: ["AC_Out_Percent_L1", "AC_Out_Percent", "Output_Load_Percent"], unit: "%", decimals: 0 },
       { label: "A", keys: ["AC_Out_Current_L1", "AC_Output_Current", "Output_Current"], unit: "A", decimals: 1 },
     ],
@@ -399,16 +401,8 @@ function getSolarChannelInfo(data, channel = 1) {
 }
 
 function displayLoadPower(data) {
-  const protocol = [
-    data?.Status?.protocol,
-    data?.protocol,
-    data?.EspData?.detect_protocol_name,
-    data?.DeviceData?.Protocol_ID,
-  ].find((value) => typeof value === "string" && value.length > 0) || "";
-  const isEasunSms = protocol === "MODBUS_EASUN_SMS";
-  const keys = isEasunSms
-    ? ["AC_Out_VA_L1", "AC_Out_VA", "AC_Out_Watt_L1", "AC_Out_Watt", "AC_Output_Power", "Output_Power"]
-    : ["AC_Out_Watt_L1", "AC_Out_Watt", "AC_Output_Power", "Output_Power"];
+  // Apparent power (VA) must never substitute for active power (W).
+  const keys = ["AC_Out_Watt_L1", "AC_Out_Watt", "AC_Output_Active_Power", "AC_Output_Power", "Output_Power"];
   return pickDataValue(data, keys, ["LiveData"]);
 }
 
@@ -763,6 +757,7 @@ function renderStatus(data) {
     data.EspData?.detect_protocol_name ||
     data.protocol ||
     "";
+  state.activeProtocol = activeProtocol;
   setText("metricPvPower", formatValue(totalSolarPower(data), " W"));
   setText("metricBatteryPercent", formatValue(data.LiveData?.Battery_Percent, " %"));
   setText("metricBatteryVoltage", formatValue(data.LiveData?.Battery_Voltage ?? data.LiveData?.Positive_Battery_Voltage, " V"));
@@ -1219,7 +1214,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   bindClick("powmrWatchBtn", async () => {
     const body = new URLSearchParams();
-    body.set("command", "powmr watch");
+    body.set("command", state.activeProtocol === "MODBUS_EASUN_SMS" ? "easun watch" : "powmr watch");
     await fetchJson("/api/command", { method: "POST", body });
     const data = await waitForCommandAnswer();
     const answer = data.RawData?.CommandAnswer || "-";
@@ -1229,7 +1224,9 @@ window.addEventListener("DOMContentLoaded", async () => {
       preview.textContent = JSON.stringify(data || {}, null, 2);
     }
     setText("dataPreviewMeta", `Last updated: ${new Date().toLocaleTimeString("en-GB")}`);
-    if (answer.startsWith("POWMR_WATCH")) {
+    if (answer.startsWith("EASUN_WATCH") && answer.includes("ERROR:")) {
+      showNotice("Register watch incomplete; see failed blocks in the answer.", true);
+    } else if (answer.startsWith("POWMR_WATCH") || answer.startsWith("EASUN_WATCH")) {
       showNotice("Register watch snapshot loaded.");
     } else if (answer && answer !== "-") {
       showNotice(answer, true);

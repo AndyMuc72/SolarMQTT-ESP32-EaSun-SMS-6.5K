@@ -1,5 +1,13 @@
 # EASUN SMS fork release notes
 
+## 0.1.0-easun.9
+
+- Correct the dashboard: active output power is shown in W; apparent output power has its own VA badge. VA is never used as a fallback for watts, including in the load overview.
+- Keep missing active power unavailable rather than inventing a watt value from VA. Preserve genuine zero-watt readings.
+- Include bounded, read-only EASUN register diagnostics and protocol-aware Register Watch from the `.9-dev` test build.
+- Document the 2026-11-14 display comparisons; output current/apparent-power accuracy and BMS SOC remain unverified. No register or scaling changes.
+- Preserve empty public Wi-Fi defaults, existing partition layout and the fork OTA index.
+
 ## 0.1.0-easun.8
 
 - Restore fork OTA discovery using a compact, automatically published release index; retry transient index errors and retain API fallback.

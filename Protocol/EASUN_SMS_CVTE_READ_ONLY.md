@@ -80,7 +80,7 @@ The user's current target snapshot provides additional evidence that takes prior
 | `0x0154` / `DC_Bus_Voltage` | ≈399.8 V | Plausible internal high-voltage DC link; it is not the 48 V battery bus |
 | `0x021A` / `AC_Out_Current_L1` | 1.45 A | Consistent with the following apparent-power reading |
 | `0x021C` / `AC_Out_Watt` | 128 W | Target-specific active output power; use this in the common output field |
-| `0x021D` / `AC_Out_VA` | 333 VA | Strongly validated: 230 V × 1.45 A ≈333.5 VA |
+| `0x021D` / `AC_Out_VA` | 333 VA | Arithmetically consistent with 230 V × 1.45 A; not independently validated against an external meter or the display |
 | `0x0220` / `Output_Load_Percent` | 2.1% | Consistent with 128 W on a 6.5 kW inverter; supersedes `0x005D` for this target |
 | `0x005D` / reference field | 21 | Does not agree with 2.1%; retained as a diagnostic value only |
 | `0x0085` / reference field | 0 W while `0x021C` reports 128 W | W-E correction does not match this firmware at this operating point; retained for comparison |

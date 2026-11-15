@@ -75,6 +75,7 @@ jobs:
         run: |
           python tools/check_public_build.py
           node tests/test_ui.cjs
+          node tests/test_easun_watch.cjs
 
       - name: Run OTA, upload and PI model regressions
         if: runner.os == 'Linux'
