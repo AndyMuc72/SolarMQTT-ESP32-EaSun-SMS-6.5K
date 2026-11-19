@@ -1,5 +1,13 @@
 # EASUN SMS fork release notes
 
+## 0.1.0-easun.10
+
+- Apply the existing below-10-V / below-10-W PV display policy to outgoing EASUN MQTT snapshots, consistently for flat topics and JSON. Zero associated PV current only when its voltage or power is below the respective threshold. Preserve valid small daytime currents, raw state and energy counters.
+- Add bounded read-only BMS, thermal and comparison snapshots, plus experimental output-block references. Keep reserved 0x021B diagnostic-only.
+- Correct the battery read-cache range to include the SOC aliases. Keep established solar, active-power, apparent-power and provisional temperature mappings.
+- Record CVTE comparison and software/serial test scopes. Keep private recovery credentials out of public builds.
+
+
 ## 0.1.0-easun.9
 
 - Correct the dashboard: active output power is shown in W; apparent output power has its own VA badge. VA is never used as a fallback for watts, including in the load overview.

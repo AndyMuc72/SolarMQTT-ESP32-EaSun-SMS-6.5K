@@ -32,8 +32,8 @@ private:
     static constexpr uint16_t kFaultBlockCount = 4;
     static constexpr uint16_t kAcLiveBlockStart = 0x0050;
     static constexpr uint16_t kAcLiveBlockCount = 14;
-    static constexpr uint16_t kBatteryBlockStart = 0x0154;
-    static constexpr uint16_t kBatteryBlockCount = 4;
+    static constexpr uint16_t kBatteryBlockStart = 0x0152;
+    static constexpr uint16_t kBatteryBlockCount = 6;
     static constexpr uint16_t kOutputBlockStart = 0x0218;
     static constexpr uint16_t kOutputBlockCount = 9;
     static constexpr uint16_t kPvTotalBlockStart = 0x0260;
@@ -76,7 +76,7 @@ private:
             "Generator Mode", "Fault", "Power Off", "Factory", "Upgrade"}}, nullptr},
         // Keep the inverter's SOC estimate separate from a BMS SOC. A Pylontech
         // reference was about 19% while this register reported 51%.
-        {0x0152, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, DESCR_Battery_Percent},
+        {0x0152, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, DESCR_Battery_Percent, 0, {}, nullptr, kBatteryBlockStart, kBatteryBlockCount},
         {0x0152, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16, "Inverter_Battery_Percent", 0, {}, nullptr, kBatteryBlockStart, kBatteryBlockCount},
         {0x0154, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, "DC_Bus_Voltage", 0, {}, nullptr, kBatteryBlockStart, kBatteryBlockCount},
         {0x0155, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16_ONE_DECIMAL, DESCR_Battery_Voltage, 0, {}, nullptr, kBatteryBlockStart, kBatteryBlockCount},
@@ -94,6 +94,12 @@ private:
         {0x01B1, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_TWO_DECIMAL, DESCR_AC_In_Current_L1},
         {0x0210, MODBUS_TYPE_HOLDING, REGISTER_TYPE_U16, "Output_Priority"},
         {0x0211, MODBUS_TYPE_HOLDING, REGISTER_TYPE_CUSTOM_VAL_NAME, "Run_Mode", 0, {.bitfield = {"APP", "UPS", "GEN"}}, nullptr},
+        // CVTE reference additions: compare against the established readings.
+        // 0x021B is explicitly reserved in CVTE v1.20: diagnostic only.
+        // These reuse the existing output block; no additional polling request.
+        {0x0218, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_ONE_DECIMAL, "AC_Out_Voltage_0218_Reference", 0, {}, nullptr, kOutputBlockStart, kOutputBlockCount},
+        {0x0219, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_TWO_DECIMAL, "AC_Out_Frequency_0219_Reference", 0, {}, nullptr, kOutputBlockStart, kOutputBlockCount},
+        {0x021B, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_TWO_DECIMAL, "AC_Out_Small_Current_021B_Experimental", 0, {}, nullptr, kOutputBlockStart, kOutputBlockCount},
         {0x021A, MODBUS_TYPE_HOLDING, REGISTER_TYPE_INT16_TWO_DECIMAL, DESCR_AC_Out_Current_L1, 0, {}, nullptr, kOutputBlockStart, kOutputBlockCount},
         // On this WiFi/FW8 unit, 0x021C agrees with current and apparent power;
         // unlike 0x0085, it reports the observed 128 W low-load output.

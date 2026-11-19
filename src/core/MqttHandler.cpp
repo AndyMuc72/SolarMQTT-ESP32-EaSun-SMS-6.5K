@@ -1,4 +1,5 @@
 #include "core/MqttHandler.h"
+#include "core/EasunMqttTelemetry.h"
 
 #include <ArduinoJson.h>
 #include <initializer_list>
@@ -988,6 +989,7 @@ void MqttHandler::publishState()
 {
     JsonDocument snapshot;
     _state.snapshotTo(snapshot);
+    EasunMqttTelemetry::normalize(snapshot);
 
     if (_settings.get.mqttJson())
     {

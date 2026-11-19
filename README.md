@@ -2,15 +2,17 @@
 
 This ESP32 fork targets the EASUN iSolar-SMS-6.5KP-WiFi / SMS-6.5KP family. See [the read-only CVTE register map and target validation notes](Protocol/EASUN_SMS_CVTE_READ_ONLY.md) before relying on individual readings. The WiFi-labelled firmware 8 unit has target-specific corrections for output watts, load percentage, battery current, DC bus voltage, and inverter-reported SOC.
 
-## Public release 0.1.0-easun.7
+## Public release 0.1.0-easun.10
 
-The current integration source tracks the latest upstream main as `0.1.0-easun.8-dev`; [merge decisions and validation status](UPSTREAM_SYNC.md) are recorded separately. The published version-7 tag and assets remain unchanged.
+EASUN MQTT solar readings now use the dashboard's below-10-V / below-10-W zero thresholds. Associated PV current is zeroed when either channel threshold applies, with no arbitrary ampere cutoff. Original state/diagnostic readings and energy counters are retained. Active output watts and apparent VA remain separate; unloaded VA/current readings are not assumed to be self-consumption.
 
-Normal releases contain **no personal Wi-Fi defaults or saved configuration**. This is also the policy for future releases. Private recovery files must never be published. See [release notes, test status and USB/OTA instructions](RELEASE_NOTES.md). Versions `.5` and `.6` are known problematic user-reported releases; `.7` is based on `.4` with the tested UI and update-check repairs.
+Read [release notes and installation instructions](RELEASE_NOTES.md), [PV/MQTT rules](Protocol/EASUN_MQTT_PV_ZERO_2026-11-19.md), and [validation status](Protocol/EASUN_10_VALIDATION.md). Additional read-only commands are `easun compare`, `easun thermal`, and `easun bms`. Register 0x021B is reserved in the CVTE table and is exposed only as an experimental comparison value.
+
+Normal releases contain **no personal Wi-Fi defaults or saved configuration**. Private recovery files must never be published. Versions `.5` and `.6` remain excluded from OTA selection. Existing upstream synchronization decisions are recorded in [UPSTREAM_SYNC.md](UPSTREAM_SYNC.md).
 
 ## EASUN SMS-6.5KP fork
 
-Read-only telemetry for the single-MPPT EASUN iSolar-SMS-6.5KP-Wifi is tracked in [Protocol/EASUN_SMS_CVTE_READ_ONLY.md](Protocol/EASUN_SMS_CVTE_READ_ONLY.md). Build status: [![EASUN ESP32 build](https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/actions/workflows/easun-build.yml/badge.svg?branch=codex/easun-sms-support)](https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/actions/workflows/easun-build.yml). A successful build is compile status, not physical inverter validation.
+Read-only telemetry for the single-MPPT EASUN iSolar-SMS-6.5KP-Wifi is tracked in [Protocol/EASUN_SMS_CVTE_READ_ONLY.md](Protocol/EASUN_SMS_CVTE_READ_ONLY.md). Build status: [![EASUN ESP32 build](https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/actions/workflows/easun-build.yml/badge.svg?branch=main)](https://github.com/AndyMuc72/SolarMQTT-ESP32-EaSun-SMS-6.5K/actions/workflows/easun-build.yml). A successful build is compile status, not physical inverter validation.
 
 # Looking for the ESP8266 Variant? go [HERE](https://github.com/softwarecrash/Solar2MQTT-ESP8266)
 

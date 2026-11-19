@@ -35,5 +35,25 @@ int main() {
         const auto input = std::to_string(address) + " 15";
         assert(parse(input.c_str(), r) == (address <= 65521));
     }
+    // Check actual preset requests, timeout continuation and unavailable raw values.
+    for (const std::string preset : {"bms", "thermal", "compare"}) {
+        std::string requested;
+        unsigned transactions = 0;
+        text = snapshot(preset, [&](uint16_t a, uint16_t n, uint16_t *w, uint8_t &result) {
+            assert(n > 0 && n <= maxWords);
+            requested += std::to_string(a) + ":" + std::to_string(n) + ";";
+            ++transactions;
+            if (transactions == 1) { result = 2; return false; }
+            for (uint16_t i = 0; i < n; ++i) w[i] = 0x7FFF;
+            result = 0; return true;
+        });
+        const std::string expected = preset == "bms" ? "400:15;415:4;" :
+            preset == "thermal" ? "800:2;816:6;" : "338:6;536:9;816:6;";
+        assert(requested == expected);
+        assert(text.find("ERROR:") != std::string::npos);
+        assert(text.find("u16=32767 i16=32767") != std::string::npos);
+        assert(text.find("3276.7") == std::string::npos);
+    }
+    assert(snapshot("write", reader).find("ERROR:") == 0);
     std::cout << "EASUN diagnostic parser, raw decoding, transport failures and 65536 address boundaries passed\n";
 }

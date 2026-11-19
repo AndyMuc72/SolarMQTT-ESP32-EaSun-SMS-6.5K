@@ -59,4 +59,23 @@ std::string read(const Request &request, Reader reader) {
     }
     return output;
 }
+// Explicit, bounded FC03 snapshots. Values stay raw: 0x7FFF must not
+// become a valid BMS voltage/SOC. No writes and no regular polling overhead.
+template<class Reader>
+std::string snapshot(const std::string &preset, Reader reader) {
+    std::string output = "EASUN_COMPARE FC03 raw; unvalidated candidates; 0x7FFF may mean unavailable\n";
+    auto append = [&](Request request) { output += read(request, reader); output += "\n"; };
+    if (preset == "bms") {
+        append({0x0190, 15});
+        append({0x019F, 4});
+    } else if (preset == "thermal") {
+        append({0x0320, 2});
+        append({0x0330, 6});
+    } else if (preset == "compare") {
+        append({0x0152, 6});
+        append({0x0218, 9});
+        append({0x0330, 6});
+    } else return "ERROR: unknown EASUN snapshot";
+    return output;
+}
 } // namespace EasunDiagnostics

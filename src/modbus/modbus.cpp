@@ -465,11 +465,21 @@ String MODBUS::requestData(String command)
             answer += read({0x0219, 8});
             return answer;
         }
+        if (command == "easun bms" || command == "easun thermal" || command == "easun compare")
+        {
+            _mCom.clearReadCache();
+            const std::string output = EasunDiagnostics::snapshot(command.c_str() + 6,
+                [this](uint16_t address, uint16_t count, uint16_t *words, uint8_t &result) {
+                    return _mCom.readHoldingBlockOnce(address, count, words, count, 400, &result);
+                });
+            _mCom.clearReadCache();
+            return String(output.c_str());
+        }
         EasunDiagnostics::Request range;
         if (command.startsWith("easun read ") &&
             EasunDiagnostics::parse(command.c_str() + 11, range))
             return String("EASUN_READ FC03 raw; no scaling\n") + read(range);
-        return "ERROR: use easun read <decimal|0xHEX address> [count 1..15], or easun watch; read-only FC03";
+        return "ERROR: use easun read <decimal|0xHEX address> [count 1..15], or easun watch/bms/thermal/compare; read-only FC03";
     }
     if (device != nullptr && device->getProtocol() == MODBUS_POWMR &&
         command.startsWith("powmr hunt"))
