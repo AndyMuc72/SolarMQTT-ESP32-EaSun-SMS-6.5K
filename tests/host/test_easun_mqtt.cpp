@@ -3,6 +3,12 @@
 #include <iostream>
 #include <string>
 using namespace EasunMqttTelemetry;
+// x87 (Linux -m32) may retain excess precision in literal comparisons.
+// Require exact zero, but compare retained nonzero decimals within 1e-12.
+static void expectNumber(double actual, double expected) {
+    if (expected == 0) assert(actual == 0);
+    else assert(std::fabs(actual - expected) < 1e-12);
+}
 int main() {
     JsonDocument original;
     deserializeJson(original, R"({"Status":{"protocol":"MODBUS_EASUN_SMS"},"RawData":{"CommandAnswer":"0x0260 raw=17"},"LiveData":{"PV_Input_Voltage":1.7,"PV_Total_Input_Current":0.58,"PV_Total_Input_Power":1,"PV1_Input_Voltage":1.7,"PV1_Input_Current_Dedicated":0.59,"PV1_Input_Power":1,"AC_Out_Watt":-8,"AC_Out_VA":75,"AC_Out_Current_L1":0.33,"PV_Generation_Sum":64550}})");
@@ -20,9 +26,9 @@ int main() {
         JsonDocument d; d["Status"]["protocol"]="MODBUS_EASUN_SMS";
         d["LiveData"]["PV_Input_Voltage"]=v;d["LiveData"]["PV_Total_Input_Power"]=p;d["LiveData"]["PV_Total_Input_Current"]=0.58;
         normalize(d);
-        assert(d["LiveData"]["PV_Input_Voltage"].as<double>()==(v<10?0:v));
-        assert(d["LiveData"]["PV_Total_Input_Power"].as<double>()==(p<10?0:p));
-        assert(d["LiveData"]["PV_Total_Input_Current"].as<double>()==((v<10||p<10)?0:0.58));
+        expectNumber(d["LiveData"]["PV_Input_Voltage"].as<double>(), v<10?0:v);
+        expectNumber(d["LiveData"]["PV_Total_Input_Power"].as<double>(), p<10?0:p);
+        expectNumber(d["LiveData"]["PV_Total_Input_Current"].as<double>(), (v<10||p<10)?0:0.58);
         assert(d["LiveData"]["PV2_Input_Voltage"].isNull());
         assert(d["LiveData"].as<JsonObject>().size()==3);
     }

@@ -13,6 +13,7 @@ MQTT previously published residual PV values such as 1.7 V / 0.58 A / 1 W while 
 
 - Wemos D1 mini ESP32 only: use `Solar2MQTT_wemos_d1_mini32_V0.1.0-easun.10.bin.ota` in the firmware web page. App-only OTA preserves the existing partition layout and settings.
 - USB recovery: `Solar2MQTT_wemos_d1_mini32_V0.1.0-easun.10.bin` is the complete 4 MB image for address 0x0 and clears configuration. Do not upload it as OTA.
+- If currently running a `-cvte-test` build, install this public OTA file manually once: those test builds do not normalize their version suffix for automatic comparison. Ordinary public versions use the normal one-click fork update path.
 - Public Wi-Fi defaults are empty. No private recovery image, stored credentials or serial logs are included.
 - Fork update discovery uses this release's board-specific OTA asset and compact index; defective .5/.6 remain blocked.
 
